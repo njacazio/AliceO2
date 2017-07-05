@@ -183,22 +183,23 @@ void Detector::CreateMaterials()
   deemax = -.3; // Maximum fractional energy loss, DLS
   stmin = -.8;
 
-  Medium(kAir, "Air$", 0, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kNomex, "Nomex$", 1, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kG10, "G10$", 2, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kFiberGlass, "fibre glass$", 3, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kAlFrame, "Al Frame$", 4, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kHoneycomb, "honeycomb$", 5, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kFre, "Fre$", 6, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kCuS, "Cu-S$", 10, 1, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kGlass, "Glass$", 7, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kWater, "Water$", 8, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kCable, "Cable$", 11, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kCableTubes, "Cables+Tubes$", 9, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kCopper, "Copper$", 10, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kPlastic, "Plastic$", 13, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kCrates, "Crates$", 12, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
-  Medium(kHoneyHoles, "honey_holes$", 14, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kAir,"TOF_Air$",          0, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kNomex,"TOF_Nomex$",        1, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kG10,"TOF_G10$",          2, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kFiberGlass,"TOF_fibre glass$",  3, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kAlFrame,"TOF_Al Frame$",     4, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kHoneycomb,"TOF_honeycomb$",    5, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kFre,"TOF_Fre$",          6, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kCuS,"TOF_Cu-S$",        10, 1, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kGlass,"TOF_Glass$",        7, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kWater,"TOF_Water$",        8, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kCable,"TOF_Cable$",       11, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kCableTubes,"TOF_Cables+Tubes$", 9, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kCopper,"TOF_Copper$",      10, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kPlastic,"TOF_Plastic$",     13, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kCrates,"TOF_Crates$",      12, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+  Medium( kHoneyHoles,"TOF_honey_holes$", 14, 0, isxfld, sxmgmx, 10., stemax, deemax, epsil, stmin);
+
 }
 
 void Detector::MaterialMixer(Float_t* p, const Float_t* const a, const Float_t* const m, Int_t n) const
