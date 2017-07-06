@@ -25,6 +25,10 @@ namespace tof
 {
 using HitType = o2::BasicXYZEHit<float>;
 
+namespace o2
+{
+namespace TOF
+{
 class Detector : public o2::Base::Detector
 {
  public:
