@@ -12,11 +12,9 @@
 #include "TGeoManager.h" // for TGeoManager
 #include "TMath.h"
 #include "TString.h"
-#include "TLorentzVector.h"
 
 #include "FairRootManager.h"
 #include "FairVolume.h"
-#include "FairLogger.h"
 
 #include "TOFSimulation/Detector.h"
 
@@ -28,83 +26,27 @@ using namespace o2::tof;
 
 ClassImp(Detector);
 
-Detector::Detector(const char* Name, Bool_t Active) : o2::Base::Detector(Name, Active), mEventNr(0),mTOFHoles(kTRUE), mHitCollection(new TClonesArray("o2::tof::HitType")),mMCTrackBranchId(-1)
+Detector::Detector(const char* Name, Bool_t Active) : o2::Base::Detector(Name, Active), mTOFHoles(kTRUE)
 {
   for (Int_t i = 0; i < Geo::NSECTORS; i++)
     mTOFSectors[i] = 1;
 }
 
-void Detector::Initialize() {
-  o2::Base::Detector::Initialize();
-}
-
-Bool_t Detector::ProcessHits(FairVolume* v) {
-  static auto *refMC = TVirtualMC::GetMC();
-
-  static TLorentzVector position2;
-  refMC->TrackPosition(position2);
-  Float_t radius = TMath::Sqrt(position2.X()*position2.X() + position2.Y()*position2.Y());
-  LOG(DEBUG) << "Process hit in TOF volume ar R="<<  radius<< " - Z=" << position2.Z()<<  FairLogger::endl;
-
-  // This method is called from the MC stepping for the sensitive volume only
-
-  if(static_cast<int>(refMC->TrackCharge()) == 0) {
-    // set a very large step size for neutral particles
-    return kFALSE; // take only charged particles
-  }
-
-  Float_t enDep = refMC->Edep();
-  if(enDep < 1E-8) return kFALSE; // wo se need a threshold?
-
-  // ADD HIT
-  static TLorentzVector position;
-  refMC->TrackPosition(position);
-  float time    = refMC->TrackTime() * 1.0e09;
-  int trackID = refMC->GetStack()->GetCurrentTrackNumber();
-  int detID   = v->getMCid();
-
-  AddHit(position.X(),position.Y(),position.Z(),time,enDep,trackID,detID);
-
-  return kTRUE; 
-}
-
-HitType* Detector::AddHit(Float_t x,Float_t y,Float_t z,Float_t time,Float_t energy,Int_t trackId,Int_t detId){
-  TClonesArray& clref = *mHitCollection;
-
-  Int_t size = clref.GetEntriesFast();
-
-  HitType *hit = new(clref[size]) HitType(x, y, z, time, energy, trackId, detId);
-
-  if(mMCTrackBranchId > -1) 
-    hit->SetLink(FairLink(-1, mEventNr, mMCTrackBranchId, trackId));
-
-  return hit;
-}
-
+void Detector::Initialize() {}
+Bool_t Detector::ProcessHits(FairVolume* v) { return true; }
 void Detector::Register()
 {
-  auto *mgr=FairRootManager::Instance();
-  mgr->Register("TOFHit", "TOF", mHitCollection, kTRUE);
-
-
-  mMCTrackBranchId=mgr->GetBranchId("MCTrack");
+  //  FairRootManager::Instance()->Register("EMCALHit", "EMCAL", mPointCollection, kTRUE);
 }
 
-TClonesArray* Detector::GetCollection(Int_t iColl) const {
-  if(iColl > 0) return nullptr;
-  return mHitCollection; 
-}
-
-void Detector::Reset() {
-  mHitCollection->Clear();
-}
-
+TClonesArray* Detector::GetCollection(Int_t iColl) const { return nullptr; }
+void Detector::Reset() {}
 void Detector::CreateMaterials()
 {
   //  AliMagF *magneticField = (AliMagF*)((AliMagF*)TGeoGlobalMagField::Instance()->GetField());
 
-  Int_t isxfld = 2;   // magneticField->Integ();
-  Float_t sxmgmx = 10.; // magneticField->Max();
+  Int_t isxfld = 0.;   // magneticField->Integ();
+  Float_t sxmgmx = 0.; // magneticField->Max();
 
   //--- Quartz (SiO2) ---
   Float_t aq[2] = { 28.0855, 15.9994 };
@@ -287,21 +229,9 @@ void Detector::ConstructGeometry()
 
   Float_t xTof = 124.5, yTof = Geo::RMAX - Geo::RMIN, zTof = Geo::ZLENA;
   DefineGeometry(xTof, yTof, zTof);
-
-  LOG(INFO) << "Loaded TOF geometry"<< FairLogger::endl;
-
-  TGeoVolume* v = gGeoManager->GetVolume("FPAD");
-  if(v == nullptr)
-    printf("Sensitive volume FSEN not found!!!!!!!!");
-  else{
-    AddSensitiveVolume(v);
-  }
 }
 
-void Detector::EndOfEvent(){
-  Reset();
-}
-
+void Detector::ConstructSuperModule(Int_t imodule) {}
 void Detector::DefineGeometry(Float_t xtof, Float_t ytof, Float_t zlenA)
 {
   //
@@ -718,13 +648,6 @@ void Detector::MakeStripsInModules(Float_t ytof, Float_t zlenA) const
   Float_t parfs[3] = { static_cast<Float_t>(klsensmx * 0.5), static_cast<Float_t>(khsensmy * 0.5),
                        static_cast<Float_t>(kwsensmz * 0.5) };
   TVirtualMC::GetMC()->Gsvolu("FSEN", "BOX", getMedium(kCuS), parfs, 3); // Cu sensitive
-
-  // printf("check material\n");
-  // printf("ID used = %i\n",getMedium(kCuS));
-  // printf("ID needed = %i\n",gGeoManager->GetMedium("TOF_Cu-S$")->GetId());
-  // getchar();
-
-
   // dividing FSEN along z in knz=2 and along x in knx=48
   TVirtualMC::GetMC()->Gsdvn("FSEZ", "FSEN", knz, 3);
   TVirtualMC::GetMC()->Gsdvn("FPAD", "FSEZ", knx, 1);
@@ -1753,15 +1676,6 @@ void Detector::MakeModulesInBTOFvolumes(Float_t ytof, Float_t zlenA) const
       TVirtualMC::GetMC()->Gspos("FTOA", 0, name, xcoor, ycoor, zcoor, idrotm[0], "ONLY");
     }
   }
-
-  // float par[3] = {100,500,10};
-  // TVirtualMC::GetMC()->Gsvolu("FTEM", "BOX ", getMedium(kAlFrame), par, 3); // Fibre glass
-  // ycoor = 0.;
-  // zcoor = 350;
-  // TVirtualMC::GetMC()->Gspos("FTEM", 0, "cave", xcoor, ycoor, zcoor, idrotm[0], "ONLY");
-
-  //  TVirtualMC::GetMC()->Gspos("FTOA", 0, "cave", xcoor, ycoor, zcoor, idrotm[0], "ONLY");
-
 }
 
 void Detector::MakeCoversInBTOFvolumes() const
@@ -1854,7 +1768,7 @@ void Detector::AddAlignableVolumes() const
   TString volPath;
   TString symName;
 
-  TString vpL0 = "cave/B077_1/BSEGMO";
+  TString vpL0 = "ALIC_1/B077_1/BSEGMO";
   TString vpL1 = "_1/BTOF";
   TString vpL2 = "_1";
   TString vpL3 = "/FTOA_0";
