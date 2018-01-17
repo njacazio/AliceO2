@@ -72,6 +72,7 @@ class Detector : public o2::Base::DetImpl<Detector>
 
   void CreateMaterials();
   void ConstructGeometry() final;
+  void addAlignableVolumes() const;
 
   void setTOFholes(Bool_t flag = kTRUE) { mTOFHoles = flag; }
  protected:
@@ -95,7 +96,6 @@ class Detector : public o2::Base::DetImpl<Detector>
   void makeCoversInBTOFvolumes() const;
   void makeBackInBTOFvolumes(Float_t ytof) const;
 
-  void addAlignableVolumes() const;
 
   Int_t mEventNr; // event count
   Int_t mTOFSectors[o2::tof::Geo::NSECTORS];
