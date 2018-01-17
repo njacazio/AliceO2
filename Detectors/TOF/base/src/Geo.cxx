@@ -157,7 +157,7 @@ void Geo::getPos(Int_t* det, Float_t* pos)
   Char_t path[200];
   getVolumePath(det, path);
   if (!gGeoManager) {
-    printf("ERROR: no TGeo\n");
+    LOG(ERROR) << " no TGeo!" << "\n"; 
   }
   gGeoManager->cd(path);
   TGeoHMatrix global;
@@ -258,8 +258,8 @@ Int_t Geo::getIndex(const Int_t * detId)
 
   Int_t idet = ((2*(NSTRIPC+NSTRIPB)+NSTRIPA)*NPADZ*NPADX)*isector +
                (stripOffset*NPADZ*NPADX)+
-	       (NPADX)*ipadz+
-	        ipadx;
+               (NPADX)*ipadz+
+                ipadx;
   return idet;
 }
 
@@ -274,14 +274,14 @@ Int_t Geo::getStripNumberPerSM(Int_t iplate, Int_t istrip)
   Int_t index = -1;
 
   Bool_t check = (
-		  (iplate<0 || iplate>=NPLATES)
-		  ||
-		  (
-		   (iplate==2 && (istrip<0 || istrip>=NSTRIPA))
-		   ||
-		   (iplate!=2 && (istrip<0 || istrip>=NSTRIPC))
-		   )
-		  );
+                  (iplate<0 || iplate>=NPLATES)
+                  ||
+                  (
+                   (iplate==2 && (istrip<0 || istrip>=NSTRIPA))
+                   ||
+                   (iplate!=2 && (istrip<0 || istrip>=NSTRIPC))
+                   )
+                  );
 
   if (iplate<0 || iplate>=NPLATES)
     LOG(ERROR) << "getStripNumberPerSM : " << "Wrong plate number in TOF (" << iplate << ")!\n";
@@ -321,7 +321,7 @@ Int_t Geo::getStripNumberPerSM(Int_t iplate, Int_t istrip)
 void Geo::fromGlobalToSector(Float_t* pos, Int_t isector)
 {
   if (isector == -1) {
-    Error("FromGlobalToSector", "Sector Index not valid (-1)");
+    LOG(ERROR) << "Sector Index not valid (-1)\n"; 
     return;
   }
 
@@ -413,6 +413,35 @@ Int_t Geo::getSector(const Float_t* pos)
 
   return iSect;
 }
+
+void Geo::getPadDxDyDz(const Float_t * pos,Int_t * det, Float_t * DeltaPos) 
+{  
+  //  
+  // Returns the x coordinate in the Pad reference frame  
+  //  
+  if (mToBeIntit) 
+    Init();     
+  
+  for (Int_t ii = 0; ii < 3; ii++)  
+    DeltaPos[ii] = pos[ii]; 
+  
+  det[0] = getSector(DeltaPos);  
+  fromGlobalToSector(DeltaPos, det[0]);  
+  det[1] = getPlate(DeltaPos);  
+  det[2] = fromPlateToStrip(DeltaPos, det[1]); 
+  det[3] = getPadZ(DeltaPos);  
+  det[4] = getPadX(DeltaPos);  
+  // translate to the pad center 
+  
+  Float_t step[3]; 
+  
+  step[0] = (det[4]+0.5)*XPAD; 
+  
+  step[1] = 0.; 
+ 
+  step[2] = (det[3]+0.5)*ZPAD;
+  translate(DeltaPos,step); 
+} 
 
 Int_t Geo::getPlate(const Float_t* pos)
 {

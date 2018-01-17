@@ -17,9 +17,6 @@
 
 #include "MFTBase/Geometry.h"
 #include "MFTBase/GeometryTGeo.h"
-#include "MFTBase/HalfSegmentation.h"
-#include "MFTBase/HalfDiskSegmentation.h"
-#include "MFTBase/LadderSegmentation.h"
 
 #include "MFTSimulation/Detector.h"
 
@@ -33,7 +30,7 @@
 #include "TGeoManager.h"
 
 #include "FairLogger.h"
-#include "FairGenericRootManager.h"
+#include "FairRootManager.h"
 #include "FairVolume.h"
 
 using o2::ITSMFT::Hit;
@@ -100,6 +97,8 @@ void Detector::Initialize()
 {
 
   mGeometryTGeo = GeometryTGeo::Instance();
+
+  defineSensitiveVolumes();
 
   FairDetector::Initialize();
 
@@ -173,14 +172,14 @@ Bool_t Detector::ProcessHits(FairVolume* vol)
 
     Hit *p = addHit(trackID,
                     sensorIndex,
-		    mTrackData.mPositionStart.Vect(),
-		    positionStop.Vect(),
-		    mTrackData.mMomentumStart.Vect(),
-		    mTrackData.mMomentumStart.E(),
-		    positionStop.T(),
-		    mTrackData.mEnergyLoss, 
-		    mTrackData.mTrkStatusStart,
-		    status);
+                    mTrackData.mPositionStart.Vect(),
+                    positionStop.Vect(),
+                    mTrackData.mMomentumStart.Vect(),
+                    mTrackData.mMomentumStart.E(),
+                    positionStop.T(),
+                    mTrackData.mEnergyLoss, 
+                    mTrackData.mTrkStatusStart,
+                    status);
     
     o2::Data::Stack *stack = (o2::Data::Stack *) TVirtualMC::GetMC()->GetStack();
     stack->addHit(GetDetId());
@@ -308,8 +307,8 @@ void Detector::createMaterials()
   
   Int_t   matId  = 0;                        // tmp material id number
   Int_t   unsens = 0, sens=1;                // sensitive or unsensitive medium
-  Int_t   itgfld = 3;			     // type of field intergration 0 no field -1 user in guswim 1 Runge Kutta 2 helix 3 const field along z
-  Float_t maxfld = 5.; 		             // max field value
+  Int_t   itgfld = 3;                        // type of field intergration 0 no field -1 user in guswim 1 Runge Kutta 2 helix 3 const field along z
+  Float_t maxfld = 5.;                       // max field value
   
   Float_t tmaxfd = -10.0;                    // max deflection angle due to magnetic field in one step
   Float_t stemax =  0.001;                   // max step allowed [cm]
@@ -395,7 +394,7 @@ void Detector::createMaterials()
   
   o2::Base::Detector::Mixture(++matId,  "Polyimide", aPolyimide, zPolyimide, dPolyimide, nPolyimide, wPolyimide);
   o2::Base::Detector::Medium(Polyimide, "Polyimide", matId, unsens, itgfld, maxfld, tmaxfd, stemax, deemax, epsil, stmin);
-	
+        
   o2::Base::Detector::Mixture(++matId, "PEEK$", aPEEK, zPEEK, dPEEK, nPEEK, wPEEK);
   o2::Base::Detector::Medium(PEEK,    "PEEK$", matId, unsens, itgfld, maxfld, tmaxfd, stemax, deemax, epsil, stmin);
   
@@ -423,7 +422,7 @@ void Detector::createMaterials()
 void Detector::createGeometry()
 {
 
-  Geometry *mftGeom = Geometry::instance();
+  Geometry* mftGeom = Geometry::instance();
   mftGeom->build();
 
 }
@@ -434,7 +433,6 @@ void Detector::ConstructGeometry()
 
   createMaterials();
   createGeometry();
-  defineSensitiveVolumes();
 
 }
 
@@ -443,8 +441,19 @@ void Detector::defineSensitiveVolumes()
 {
 
   TGeoVolume* vol;
+  Geometry* mftGeom = Geometry::instance();
+
   vol = gGeoManager->GetVolume("MFTSensor");
-  AddSensitiveVolume(vol);
+  if (!vol) {
+    LOG(FATAL) << "can't find volume MFTSensor" << FairLogger::endl;
+  } else {
+    AddSensitiveVolume(vol);
+    if(!mftGeom->getSensorVolumeID()) {
+      mftGeom->setSensorVolumeID(vol->GetNumber());
+    } else if (mftGeom->getSensorVolumeID() != vol->GetNumber()) {
+      LOG(FATAL) << "CreateSensors: different Sensor volume ID !!!!" << FairLogger::endl;
+    }
+  }
 
 }
 
@@ -463,8 +472,8 @@ void Detector::Register()
   // parameter to kFALSE means that this collection will not be written to the file,
   // it will exist only during the simulation
 
-  if (FairGenericRootManager::Instance()) {
-    FairGenericRootManager::Instance()->GetFairRootManager()->RegisterAny(addNameTo("Hit").data(), mHits, kTRUE);
+  if (FairRootManager::Instance()) {
+    FairRootManager::Instance()->RegisterAny(addNameTo("Hit").data(), mHits, kTRUE);
   }
 
 }

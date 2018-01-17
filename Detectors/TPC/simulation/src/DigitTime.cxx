@@ -27,14 +27,14 @@ void DigitTime::setDigit(size_t hitID, int cru, int row, int pad, float charge)
   }
   else{
     const Mapper& mapper = Mapper::instance();
-    mRows[row] = std::unique_ptr<DigitRow> (new DigitRow(row, mapper.getPadRegionInfo(CRU(cru).region()).getPadsInRowRegion(row)));
+    mRows[row] = std::make_unique<DigitRow> (row, mapper.getPadRegionInfo(CRU(cru).region()).getPadsInRowRegion(row));
     mRows[row]->setDigit(hitID, pad, charge);
   }
   mTotalChargeTimeBin+=charge;
 }
 
 void DigitTime::fillOutputContainer(std::vector<o2::TPC::Digit> *output, o2::dataformats::MCTruthContainer<o2::MCCompLabel> &mcTruth,
-         			    std::vector<o2::TPC::DigitMCMetaData> *debug, int cru, int timeBin, float commonMode)
+                                    std::vector<o2::TPC::DigitMCMetaData> *debug, int cru, int timeBin, float commonMode)
 {
   for(auto &aRow : mRows) {
     if(aRow == nullptr) continue;

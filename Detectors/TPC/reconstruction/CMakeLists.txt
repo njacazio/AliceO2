@@ -6,29 +6,27 @@ link_directories( ${LINK_DIRECTORIES})
 
 set(SRCS
    src/AdcClockMonitor.cxx
-
-   src/BoxCluster.cxx
    src/BoxClusterer.cxx
    src/Cluster.cxx
-   src/Clusterer.cxx
    src/ClusterContainer.cxx
    src/ClustererTask.cxx
    src/GBTFrame.cxx
    src/GBTFrameContainer.cxx
    src/HalfSAMPAData.cxx
-   src/HwCluster.cxx
    src/HwClusterer.cxx
    src/HwClusterFinder.cxx
    src/HwFixedPoint.cxx
    src/RawReader.cxx
+   src/RawReaderEventSync.cxx
    src/SyncPatternMonitor.cxx
    src/TrackTPC.cxx
    src/TPCCATracking.cxx
+   src/HardwareClusterDecoder.cxx
+   src/DigitalCurrentClusterIntegrator.cxx
 )
 
 set(HEADERS
    include/${MODULE_NAME}/AdcClockMonitor.h
-   include/${MODULE_NAME}/BoxCluster.h
    include/${MODULE_NAME}/BoxClusterer.h
    include/${MODULE_NAME}/Cluster.h
    include/${MODULE_NAME}/Clusterer.h
@@ -37,14 +35,16 @@ set(HEADERS
    include/${MODULE_NAME}/GBTFrame.h
    include/${MODULE_NAME}/GBTFrameContainer.h
    include/${MODULE_NAME}/HalfSAMPAData.h
-   include/${MODULE_NAME}/HwCluster.h
    include/${MODULE_NAME}/HwClusterer.h
    include/${MODULE_NAME}/HwClusterFinder.h
    include/${MODULE_NAME}/HwFixedPoint.h
    include/${MODULE_NAME}/RawReader.h
+   include/${MODULE_NAME}/RawReaderEventSync.h
    include/${MODULE_NAME}/SyncPatternMonitor.h
    include/${MODULE_NAME}/TrackTPC.h
    include/${MODULE_NAME}/TPCCATracking.h
+   include/${MODULE_NAME}/HardwareClusterDecoder.h
+   include/${MODULE_NAME}/DigitalCurrentClusterIntegrator.h
 )
 set(LINKDEF src/TPCReconstructionLinkDef.h)
 set(LIBRARY_NAME ${MODULE_NAME})
@@ -85,8 +85,7 @@ math(EXPR _length ${_length}-1)
 foreach (_file RANGE 0 ${_length}) # loop over a range because we traverse 2 lists and not 1
   list(GET Exe_Names ${_file} _name)
   list(GET Exe_Source ${_file} _src)
-#  Set(EXE_NAME ${_name})
-#  Set(SRCS ${_src})
+  # FIXME: propably a copy paste remnant, remove?
 #  Set(DEPENDENCIES CCDB)
   O2_GENERATE_EXECUTABLE(
       EXE_NAME ${_name}

@@ -76,6 +76,17 @@ if (G4RUNLIB AND G3RUNLIB AND VMCLIB)
   message(STATUS "Simulation environment found")
 endif()
 
+# Build type for coverage builds
+set(CMAKE_CXX_FLAGS_COVERAGE "-g -O2 -fprofile-arcs -ftest-coverage")
+set(CMAKE_C_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_COVERAGE}")
+set(CMAKE_Fortran_FLAGS_COVERAGE "-g -O2 -fprofile-arcs -ftest-coverage")
+set(CMAKE_LINK_FLAGS_COVERAGE "--coverage -fprofile-arcs  -fPIC")
+
+MARK_AS_ADVANCED(
+    CMAKE_CXX_FLAGS_COVERAGE
+    CMAKE_C_FLAGS_COVERAGE
+    CMAKE_Fortran_FLAGS_COVERAGE
+    CMAKE_LINK_FLAGS_COVERAGE)
 
 
 #Check the compiler and set the compile and link flags
@@ -183,8 +194,11 @@ add_subdirectory(Framework)
 add_subdirectory(Algorithm)
 add_subdirectory(macro)
 add_subdirectory(Utilities)
+add_subdirectory(Steer)
 add_subdirectory(doc)
-add_subdirectory(run)
+if (HAVESIMULATION)
+   add_subdirectory(run)
+endif()
 add_subdirectory(config)
 
 IF (IWYU_FOUND)

@@ -24,7 +24,7 @@
 //FairRoot includes
 #include "FairDetector.h"           // for FairDetector
 #include "FairLogger.h"             // for LOG, LOG_IF
-#include "FairGenericRootManager.h"        // for FairGenericRootManager
+#include "FairRootManager.h"        // for FairRootManager
 #include "FairRun.h"                // for FairRun
 #include "FairRuntimeDb.h"          // for FairRuntimeDb
 #include "FairVolume.h"             // for FairVolume
@@ -53,8 +53,6 @@ using namespace o2::ITS;
 
 Detector::Detector()
   : o2::Base::DetImpl<Detector>("ITS", kTRUE),
-    mLayerID(nullptr),
-    mNumberLayers(),
     mTrackData(),
     /*
     mHitStarted(false),
@@ -71,26 +69,8 @@ Detector::Detector()
     mRotY(),
     mRotZ(),
     mModifyGeometry(kFALSE),
-    mNumberOfWrapperVolumes(0),
-    mWrapperMinRadius(nullptr),
-    mWrapperMaxRadius(nullptr),
-    mWrapperZSpan(nullptr),
-    mWrapperLayerId(nullptr),
-    mTurboLayer(nullptr),
-    mLayerPhi0(nullptr),
-    mLayerRadii(nullptr),
-    mLayerZLength(nullptr),
-    mStavePerLayer(nullptr),
-    mUnitPerStave(nullptr),
-    mChipThickness(nullptr),
-    mStaveWidth(nullptr),
-    mStaveTilt(nullptr),
-    mDetectorThickness(nullptr),
-    mChipTypeID(nullptr),
-    mBuildLevel(nullptr),
     mHits(new std::vector<o2::ITSMFT::Hit>),
     mMisalignmentParameter(nullptr),
-    mGeometry(nullptr),
     mStaveModelInnerBarrel(kIBModel0),
     mStaveModelOuterBarrel(kOBModel0)
 {
@@ -138,8 +118,6 @@ static void configITS(Detector *its) {
   const double wrpRMax[kNWrapVol]  = {14.0, 30.0, 46.0};
   const double wrpZSpan[kNWrapVol] = {70., 95., 200.};
 
-  its->setNumberOfWrapperVolumes(kNWrapVol); // define wrapper volumes for layers
-
   for (int iw = 0; iw < kNWrapVol; iw++) {
     its->defineWrapperVolume(iw, wrpRMin[iw], wrpRMax[iw], wrpZSpan[iw]);
   }
@@ -152,15 +130,13 @@ static void configITS(Detector *its) {
     nModPerStaveLr = TMath::Nint(tdr5dat[idLr][kNModPerStave]);
     int nChipsPerStaveLr = nModPerStaveLr;
     if (idLr >= kNLrInner) {
-      double modlen = nChipsPerModule*Segmentation::SensorSizeCols + (nChipsPerModule-1)*zChipGap;
-      double zlen = nModPerStaveLr*modlen + (nModPerStaveLr-1)*zModuleGap;
-      its->defineLayer(idLr, phi0, rLr, zlen, nStaveLr, nModPerStaveLr,
+      its->defineLayer(idLr, phi0, rLr, nStaveLr, nModPerStaveLr,
                        kSiThickOB, Segmentation::SensorThickness, kSensTypeID, kBuildLevel);
     } else {
       turbo = -radii2Turbo(tdr5dat[idLr][kRmn], rLr, tdr5dat[idLr][kRmx], Segmentation::SensorSizeRows);
-      its->defineLayerTurbo(idLr, phi0, rLr, nChipsPerStaveLr * Segmentation::SensorSizeCols, nStaveLr,
+      its->defineLayerTurbo(idLr, phi0, rLr, nStaveLr,
                             nChipsPerStaveLr, Segmentation::SensorSizeRows, turbo, kSiThickIB,
-			    Segmentation::SensorThickness, kSensTypeID, kBuildLevel);
+                            Segmentation::SensorThickness, kSensTypeID, kBuildLevel);
     }
   }
 
@@ -168,9 +144,6 @@ static void configITS(Detector *its) {
 
 Detector::Detector(Bool_t active)
   : o2::Base::DetImpl<Detector>("ITS", active),
-    mLayerID(nullptr),
-    mNumberLayers(7),
-    mLayerName(new TString[mNumberLayers]),
     mTrackData(),
     /*
     mHitStarted(false),
@@ -187,64 +160,36 @@ Detector::Detector(Bool_t active)
     mRotY(),
     mRotZ(),
     mModifyGeometry(kFALSE),
-    mNumberOfWrapperVolumes(0),
-    mWrapperMinRadius(nullptr),
-    mWrapperMaxRadius(nullptr),
-    mWrapperZSpan(nullptr),
-    mWrapperLayerId(nullptr),
-    mTurboLayer(nullptr),
-    mLayerPhi0(nullptr),
-    mLayerRadii(nullptr),
-    mLayerZLength(nullptr),
-    mStavePerLayer(nullptr),
-    mUnitPerStave(nullptr),
-    mChipThickness(nullptr),
-    mStaveWidth(nullptr),
-    mStaveTilt(nullptr),
-    mDetectorThickness(nullptr),
-    mChipTypeID(nullptr),
-    mBuildLevel(nullptr),
 
     mHits(new std::vector<o2::ITSMFT::Hit>),
     mMisalignmentParameter(nullptr),
     
-    mGeometry(nullptr),
     mStaveModelInnerBarrel(kIBModel0),
     mStaveModelOuterBarrel(kOBModel0)
 {
 
-  for (Int_t j = 0; j < mNumberLayers; j++) {
+  for (Int_t j = 0; j < sNumberLayers; j++) {
     mLayerName[j].Form("%s%d", GeometryTGeo::getITSSensorPattern(), j); // See V3Layer
   }
 
-  mTurboLayer = new Bool_t[mNumberLayers];
-  mLayerPhi0 = new Double_t[mNumberLayers];
-  mLayerRadii = new Double_t[mNumberLayers];
-  mLayerZLength = new Double_t[mNumberLayers];
-  mStavePerLayer = new Int_t[mNumberLayers];
-  mUnitPerStave = new Int_t[mNumberLayers];
-  mChipThickness = new Double_t[mNumberLayers];
-  mStaveWidth = new Double_t[mNumberLayers];
-  mStaveTilt = new Double_t[mNumberLayers];
-  mDetectorThickness = new Double_t[mNumberLayers];
-  mChipTypeID = new UInt_t[mNumberLayers];
-  mBuildLevel = new Int_t[mNumberLayers];
-
-  mGeometry = new V3Layer *[mNumberLayers];
-
-  if (mNumberLayers > 0) { // if not, we'll Fatal-ize in CreateGeometry
-    for (Int_t j = 0; j < mNumberLayers; j++) {
+  if (sNumberLayers > 0) { // if not, we'll Fatal-ize in CreateGeometry
+    for (Int_t j = 0; j < sNumberLayers; j++) {
       mLayerPhi0[j] = 0;
       mLayerRadii[j] = 0.;
-      mLayerZLength[j] = 0.;
       mStavePerLayer[j] = 0;
       mUnitPerStave[j] = 0;
+      mChipThickness[j] = 0.;
       mStaveWidth[j] = 0.;
+      mStaveTilt[j] = 0.;
       mDetectorThickness[j] = 0.;
       mChipTypeID[j] = 0;
       mBuildLevel[j] = 0;
       mGeometry[j] = nullptr;
     }
+  }
+
+  for (int i = sNumberOfWrapperVolumes; i--;) {
+    mWrapperMinRadius[i] = mWrapperMaxRadius[i] = mWrapperZSpan[i] = -1;
   }
 
   configITS(this);
@@ -253,9 +198,6 @@ Detector::Detector(Bool_t active)
 
 Detector::Detector(const Detector &rhs)
   : o2::Base::DetImpl<Detector>(rhs),
-    mLayerID(nullptr),
-    mNumberLayers(rhs.mNumberLayers),
-    mLayerName(nullptr),
     mTrackData(),
     /*    
     mHitStarted(false),
@@ -274,65 +216,26 @@ Detector::Detector(const Detector &rhs)
 
     mModifyGeometry(rhs.mModifyGeometry),
 
-    mNumberOfWrapperVolumes(rhs.mNumberOfWrapperVolumes),
-  // the following parameters may be shared with master if needed
-  // let's try not to set them and keep dtor simple
-    mWrapperMinRadius(nullptr),
-    mWrapperMaxRadius(nullptr),
-    mWrapperZSpan(nullptr),
-    mWrapperLayerId(nullptr),
-    mTurboLayer(nullptr),
-    mLayerPhi0(nullptr),
-    mLayerRadii(nullptr),
-    mLayerZLength(nullptr),
-    mStavePerLayer(nullptr),
-    mUnitPerStave(nullptr),
-    mChipThickness(nullptr),
-    mStaveWidth(nullptr),
-    mStaveTilt(nullptr),
-    mDetectorThickness(nullptr),
-    mChipTypeID(nullptr),
-    mBuildLevel(nullptr),
     /// Container for data points
     mHits(new std::vector<o2::ITSMFT::Hit>),
     mMisalignmentParameter(nullptr),
 
-    mGeometry(rhs.mGeometry),
     mStaveModelInnerBarrel(rhs.mStaveModelInnerBarrel),
-    mStaveModelOuterBarrel(rhs.mStaveModelInnerBarrel)
+    mStaveModelOuterBarrel(rhs.mStaveModelOuterBarrel)
 {
-  mLayerName = new TString[mNumberLayers];
 
-  for (Int_t j = 0; j < mNumberLayers; j++) {
+  for (Int_t j = 0; j < sNumberLayers; j++) {
     mLayerName[j].Form("%s%d", GeometryTGeo::getITSSensorPattern(), j); // See V3Layer
   }
 }
 
 Detector::~Detector()
 {
-  delete[] mTurboLayer;
-  delete[] mLayerPhi0;
-  delete[] mLayerRadii;
-  delete[] mLayerZLength;
-  delete[] mStavePerLayer;
-  delete[] mUnitPerStave;
-  delete[] mChipThickness;
-  delete[] mStaveWidth;
-  delete[] mStaveTilt;
-  delete[] mDetectorThickness;
-  delete[] mChipTypeID;
-  delete[] mBuildLevel;
-  delete[] mGeometry;
-  delete[] mWrapperMinRadius;
-  delete[] mWrapperMaxRadius;
-  delete[] mWrapperZSpan;
-  delete[] mWrapperLayerId;
 
   if (mHits) {
     delete mHits;
   }
 
-  delete[] mLayerID;
 }
 
 Detector &Detector::operator=(const Detector &rhs)
@@ -352,45 +255,19 @@ Detector &Detector::operator=(const Detector &rhs)
   // base class assignment
   Base::Detector::operator=(rhs);
 
-  mLayerID = nullptr;
-  mNumberLayers = rhs.mNumberLayers;
-  mLayerName = nullptr;
-
   mNumberOfDetectors = rhs.mNumberOfDetectors;
 
   mModifyGeometry = rhs.mModifyGeometry;
-
-  mNumberOfWrapperVolumes = rhs.mNumberOfWrapperVolumes;
-  // the following parameters may be shared with master if needed
-  // let's try not to set them and keep dtor simple
-  mWrapperMinRadius = nullptr;
-  mWrapperMaxRadius = nullptr;
-  mWrapperZSpan = nullptr;
-  mWrapperLayerId = nullptr;
-  mTurboLayer = nullptr;
-  mLayerPhi0 = nullptr;
-  mLayerRadii = nullptr;
-  mLayerZLength = nullptr;
-  mStavePerLayer = nullptr;
-  mUnitPerStave = nullptr;
-  mChipThickness = nullptr;
-  mStaveWidth = nullptr;
-  mStaveTilt = nullptr;
-  mDetectorThickness = nullptr;
-  mChipTypeID = nullptr;
-  mBuildLevel = nullptr;
 
   /// Container for data points
   mHits = nullptr;
 
   mMisalignmentParameter = nullptr;
 
-  mGeometry = nullptr;
   mStaveModelInnerBarrel = rhs.mStaveModelInnerBarrel;
-  mStaveModelOuterBarrel = rhs.mStaveModelInnerBarrel;
+  mStaveModelOuterBarrel = rhs.mStaveModelOuterBarrel;
 
-  mLayerName = new TString[mNumberLayers];
-  for (Int_t j = 0; j < mNumberLayers; j++) {
+  for (Int_t j = 0; j < sNumberLayers; j++) {
     mLayerName[j].Form("%s%d", GeometryTGeo::getITSSensorPattern(), j); // See V3Layer
   }
 
@@ -399,11 +276,7 @@ Detector &Detector::operator=(const Detector &rhs)
 
 void Detector::Initialize()
 {
-  if (!mLayerID) {
-    mLayerID = new Int_t[mNumberLayers];
-  }
-
-  for (int i = 0; i < mNumberLayers; i++) {
+  for (int i = 0; i < sNumberLayers; i++) {
     mLayerID[i] = gMC ? TVirtualMC::GetMC()->VolId(mLayerName[i]) : 0;
   }
 
@@ -451,7 +324,7 @@ Bool_t Detector::ProcessHits(FairVolume *vol)
 
   // FIXME: Determine the layer number. Is this information available directly from the FairVolume?
   bool notSens = false;
-  while ((lay < mNumberLayers) && (notSens=(volID != mLayerID[lay]))) {
+  while ((lay < sNumberLayers) && (notSens=(volID != mLayerID[lay]))) {
     ++lay;
   }
   if (notSens) return kFALSE; //RS: can this happen? This method must be called for sensors only?
@@ -500,9 +373,9 @@ Bool_t Detector::ProcessHits(FairVolume *vol)
     int chipindex = mGeometryTGeo->getChipIndex(lay, stave, halfstave, module, chipinmodule);
     
     Hit *p = addHit(vmc->GetStack()->GetCurrentTrackNumber(), chipindex,
-		      mTrackData.mPositionStart.Vect(),positionStop.Vect(),mTrackData.mMomentumStart.Vect(),
-		      mTrackData.mMomentumStart.E(),positionStop.T(),mTrackData.mEnergyLoss,
-		      mTrackData.mTrkStatusStart,status);
+                      mTrackData.mPositionStart.Vect(),positionStop.Vect(),mTrackData.mMomentumStart.Vect(),
+                      mTrackData.mMomentumStart.E(),positionStop.T(),mTrackData.mEnergyLoss,
+                      mTrackData.mTrkStatusStart,status);
     //p->SetTotalEnergy(vmc->Etot());
 
     // RS: not sure this is needed
@@ -639,7 +512,7 @@ void Detector::createMaterials()
   // Carbon prepreg woven
   o2::Base::Detector::Material(18, "F6151B05M$", 12.0107, 6, 2.133, 999, 999);
   o2::Base::Detector::Medium(18, "F6151B05M$", 18, 0, ifield, fieldm, tmaxfdSi, stemaxSi,
-			          deemaxSi,epsilSi,stminSi);
+                                  deemaxSi,epsilSi,stminSi);
   // Impregnated thread
   o2::Base::Detector::Material(9, "M60J3K$", 12.0107, 6, 2.21, 999, 999);
   o2::Base::Detector::Medium(9, "M60J3K$", 9, 0, ifield, fieldm, tmaxfdSi, stemaxSi, deemaxSi,
@@ -664,7 +537,7 @@ void Detector::createMaterials()
   // PEEK CF30
   o2::Base::Detector::Mixture(19, "PEEKCF30$", aPEEK, zPEEK, dPEEK, -3, wPEEK);
   o2::Base::Detector::Medium(19,"PEEKCF30$", 19, 0, ifield, fieldm, tmaxfdSi, stemaxSi,
-			          deemaxSi,epsilSi,stminSi);
+                                  deemaxSi,epsilSi,stminSi);
 
   // Flex cable
   Float_t aFCm[5] = {12.0107, 1.00794, 14.0067, 15.9994, 26.981538};
@@ -692,17 +565,17 @@ void Detector::createMaterials()
 
   o2::Base::Detector::Mixture(20, "TUNGCARB$", aWC, zWC, dWC, 2, wWC);
   o2::Base::Detector::Medium(20, "TUNGCARB$", 20, 0, ifield, fieldm, tmaxfd, stemax,
-			          deemaxSi,epsilSi,stminSi);
+                                  deemaxSi,epsilSi,stminSi);
 
   wInox304[3] = 1. - wInox304[0] - wInox304[1] - wInox304[2];
   o2::Base::Detector::Mixture(21, "INOX304$", aInox304, zInox304, dInox304, 4, wInox304);
   o2::Base::Detector::Medium(21, "INOX304$", 21, 0, ifield, fieldm, tmaxfd, stemax,
-			          deemaxSi,epsilSi,stminSi);
+                                  deemaxSi,epsilSi,stminSi);
 
   //Tungsten (for gamma converter rods)
   o2::Base::Detector::Material(28, "TUNGSTEN$", 183.84, 74, 19.25, 999, 999);
   o2::Base::Detector::Medium(28, "TUNGSTEN$", 28,0, ifield, fieldm, tmaxfdSi, stemaxSi,
-			          deemaxSi,epsilSi,stminSi);
+                                  deemaxSi,epsilSi,stminSi);
 }
 
 void Detector::EndOfEvent()
@@ -717,8 +590,8 @@ void Detector::Register()
   // it will exist only during the simulation
 
   // FIXME: fix MT interface
-  if (FairGenericRootManager::Instance()) {
-    FairGenericRootManager::Instance()->GetFairRootManager()->RegisterAny(addNameTo("Hit").data(), mHits, kTRUE);
+  if (FairRootManager::Instance()) {
+    FairRootManager::Instance()->RegisterAny(addNameTo("Hit").data(), mHits, kTRUE);
   }
 }
 
@@ -727,33 +600,12 @@ void Detector::Reset()
   mHits->clear();
 }
 
-void Detector::setNumberOfWrapperVolumes(Int_t n)
-{
-  // book arrays for wrapper volumes
-  if (mNumberOfWrapperVolumes) {
-    LOG(FATAL) << mNumberOfWrapperVolumes << " wrapper volumes already defined" << FairLogger::endl;
-  }
-
-  if (n < 1) {
-    return;
-  }
-
-  mNumberOfWrapperVolumes = n;
-  mWrapperMinRadius = new Double_t[mNumberOfWrapperVolumes];
-  mWrapperMaxRadius = new Double_t[mNumberOfWrapperVolumes];
-  mWrapperZSpan = new Double_t[mNumberOfWrapperVolumes];
-
-  for (int i = mNumberOfWrapperVolumes; i--;) {
-    mWrapperMinRadius[i] = mWrapperMaxRadius[i] = mWrapperZSpan[i] = -1;
-  }
-}
-
 void Detector::defineWrapperVolume(Int_t id, Double_t rmin, Double_t rmax,
                                    Double_t zspan)
 {
   // set parameters of id-th wrapper volume
-  if (id >= mNumberOfWrapperVolumes || id < 0) {
-    LOG(FATAL) << "id " << id << " of wrapper volume is not in 0-" << mNumberOfWrapperVolumes - 1
+  if (id >= sNumberOfWrapperVolumes || id < 0) {
+    LOG(FATAL) << "id " << id << " of wrapper volume is not in 0-" << sNumberOfWrapperVolumes - 1
                << " range" << FairLogger::endl;
   }
 
@@ -762,8 +614,8 @@ void Detector::defineWrapperVolume(Int_t id, Double_t rmin, Double_t rmax,
   mWrapperZSpan[id] = zspan;
 }
 
-void Detector::defineLayer(Int_t nlay, double phi0, Double_t r, Double_t zlen,
-                           Int_t nstav, Int_t nunit, Double_t lthick, Double_t dthick,
+void Detector::defineLayer(Int_t nlay, double phi0, Double_t r, Int_t nstav,
+                           Int_t nunit, Double_t lthick, Double_t dthick,
                            UInt_t dettypeID, Int_t buildLevel)
 {
   //     Sets the layer parameters
@@ -771,7 +623,6 @@ void Detector::defineLayer(Int_t nlay, double phi0, Double_t r, Double_t zlen,
   //          nlay    layer number
   //          phi0    layer phi0
   //          r       layer radius
-  //          zlen    layer length
   //          nstav   number of staves
   //          nunit   IB: number of chips per stave
   //                  OB: number of modules per half stave
@@ -784,11 +635,11 @@ void Detector::defineLayer(Int_t nlay, double phi0, Double_t r, Double_t zlen,
   // Return:
   //   none.
 
-  LOG(INFO) << "L# " << nlay << " Phi:" << phi0 << " R:" << r << " DZ:" << zlen << " Nst:" << nstav
+  LOG(INFO) << "L# " << nlay << " Phi:" << phi0 << " R:" << r << " Nst:" << nstav
             << " Nunit:" << nunit << " Lthick:" << lthick << " Dthick:" << dthick
             << " DetID:" << dettypeID << " B:" << buildLevel << FairLogger::endl;
 
-  if (nlay >= mNumberLayers || nlay < 0) {
+  if (nlay >= sNumberLayers || nlay < 0) {
     LOG(ERROR) << "Wrong layer number " << nlay << FairLogger::endl;
     return;
   }
@@ -796,7 +647,6 @@ void Detector::defineLayer(Int_t nlay, double phi0, Double_t r, Double_t zlen,
   mTurboLayer[nlay] = kFALSE;
   mLayerPhi0[nlay] = phi0;
   mLayerRadii[nlay] = r;
-  mLayerZLength[nlay] = zlen;
   mStavePerLayer[nlay] = nstav;
   mUnitPerStave[nlay] = nunit;
   mChipThickness[nlay] = lthick;
@@ -805,7 +655,7 @@ void Detector::defineLayer(Int_t nlay, double phi0, Double_t r, Double_t zlen,
   mBuildLevel[nlay] = buildLevel;
 }
 
-void Detector::defineLayerTurbo(Int_t nlay, Double_t phi0, Double_t r, Double_t zlen,
+void Detector::defineLayerTurbo(Int_t nlay, Double_t phi0, Double_t r,
                                 Int_t nstav, Int_t nunit, Double_t width,
                                 Double_t tilt, Double_t lthick, Double_t dthick,
                                 UInt_t dettypeID, Int_t buildLevel)
@@ -816,7 +666,6 @@ void Detector::defineLayerTurbo(Int_t nlay, Double_t phi0, Double_t r, Double_t 
   //          nlay    layer number
   //          phi0    phi of 1st stave
   //          r       layer radius
-  //          zlen    layer length
   //          nstav   number of staves
   //          nunit   IB: number of chips per stave
   //                  OB: number of modules per half stave
@@ -831,12 +680,12 @@ void Detector::defineLayerTurbo(Int_t nlay, Double_t phi0, Double_t r, Double_t 
   // Return:
   //   none.
 
-  LOG(INFO) << "L# " << nlay << " Phi:" << phi0 << " R:" << r << " DZ:" << zlen << " Nst:" << nstav
+  LOG(INFO) << "L# " << nlay << " Phi:" << phi0 << " R:" << r << " Nst:" << nstav
             << " Nunit:" << nunit << " W:" << width << " Tilt:" << tilt << " Lthick:" << lthick
             << " Dthick:" << dthick << " DetID:" << dettypeID << " B:" << buildLevel
             << FairLogger::endl;
 
-  if (nlay >= mNumberLayers || nlay < 0) {
+  if (nlay >= sNumberLayers || nlay < 0) {
     LOG(ERROR) << "Wrong layer number " << nlay << FairLogger::endl;
     return;
   }
@@ -844,7 +693,6 @@ void Detector::defineLayerTurbo(Int_t nlay, Double_t phi0, Double_t r, Double_t 
   mTurboLayer[nlay] = kTRUE;
   mLayerPhi0[nlay] = phi0;
   mLayerRadii[nlay] = r;
-  mLayerZLength[nlay] = zlen;
   mStavePerLayer[nlay] = nstav;
   mUnitPerStave[nlay] = nunit;
   mChipThickness[nlay] = lthick;
@@ -856,8 +704,8 @@ void Detector::defineLayerTurbo(Int_t nlay, Double_t phi0, Double_t r, Double_t 
 }
 
 void Detector::getLayerParameters(Int_t nlay, Double_t &phi0, Double_t &r,
-                                  Double_t &zlen, Int_t &nstav, Int_t &nmod,
-                                  Double_t &width, Double_t &tilt, Double_t &lthick,
+                                  Int_t &nstav, Int_t &nmod, Double_t &width,
+                                  Double_t &tilt, Double_t &lthick,
                                   Double_t &dthick, UInt_t &dettype) const
 {
   //     Gets the layer parameters
@@ -866,7 +714,6 @@ void Detector::getLayerParameters(Int_t nlay, Double_t &phi0, Double_t &r,
   // Outputs:
   //          phi0    phi of 1st stave
   //          r       layer radius
-  //          zlen    layer length
   //          nstav   number of staves
   //          nmod    IB: number of chips per stave
   //                  OB: number of modules per half stave
@@ -878,14 +725,13 @@ void Detector::getLayerParameters(Int_t nlay, Double_t &phi0, Double_t &r,
   // Return:
   //   none.
 
-  if (nlay >= mNumberLayers || nlay < 0) {
+  if (nlay >= sNumberLayers || nlay < 0) {
     LOG(ERROR) << "Wrong layer number " << nlay << FairLogger::endl;
     return;
   }
 
   phi0 = mLayerPhi0[nlay];
   r = mLayerRadii[nlay];
-  zlen = mLayerZLength[nlay];
   nstav = mStavePerLayer[nlay];
   nmod = mUnitPerStave[nlay];
   width = mStaveWidth[nlay];
@@ -949,17 +795,9 @@ void Detector::constructDetectorGeometry()
   vITSV->SetTitle(vstrng);
 
   // Check that we have all needed parameters
-  if (mNumberLayers <= 0) {
-    LOG(FATAL) << "Wrong number of layers (" << mNumberLayers << ")" << FairLogger::endl;
-  }
-
-  for (Int_t j = 0; j < mNumberLayers; j++) {
+  for (Int_t j = 0; j < sNumberLayers; j++) {
     if (mLayerRadii[j] <= 0) {
       LOG(FATAL) << "Wrong layer radius for layer " << j << "(" << mLayerRadii[j] << ")"
-                 << FairLogger::endl;
-    }
-    if (mLayerZLength[j] <= 0) {
-      LOG(FATAL) << "Wrong layer length for layer " << j << "(" << mLayerZLength[j] << ")"
                  << FairLogger::endl;
     }
     if (mStavePerLayer[j] <= 0) {
@@ -1003,18 +841,16 @@ void Detector::constructDetectorGeometry()
   // Create the wrapper volumes
   TGeoVolume **wrapVols = nullptr;
 
-  if (mNumberOfWrapperVolumes) {
-    wrapVols = new TGeoVolume *[mNumberOfWrapperVolumes];
-    for (int id = 0; id < mNumberOfWrapperVolumes; id++) {
+  if (sNumberOfWrapperVolumes) {
+    wrapVols = new TGeoVolume *[sNumberOfWrapperVolumes];
+    for (int id = 0; id < sNumberOfWrapperVolumes; id++) {
       wrapVols[id] = createWrapperVolume(id);
       vITSV->AddNode(wrapVols[id], 1, nullptr);
     }
   }
 
-  mWrapperLayerId = new Int_t[mNumberLayers];
-
   // Now create the actual geometry
-  for (Int_t j = 0; j < mNumberLayers; j++) {
+  for (Int_t j = 0; j < sNumberLayers; j++) {
     TGeoVolume *dest = vITSV;
     mWrapperLayerId[j] = -1;
 
@@ -1028,13 +864,12 @@ void Detector::constructDetectorGeometry()
 
     mGeometry[j]->setPhi0(mLayerPhi0[j]);
     mGeometry[j]->setRadius(mLayerRadii[j]);
-    mGeometry[j]->setZLength(mLayerZLength[j]);
     mGeometry[j]->setNumberOfStaves(mStavePerLayer[j]);
     mGeometry[j]->setNumberOfUnits(mUnitPerStave[j]);
     mGeometry[j]->setChipType(mChipTypeID[j]);
     mGeometry[j]->setBuildLevel(mBuildLevel[j]);
 
-    if (j < 3) {
+    if (j < sNumberInnerLayers) {
       mGeometry[j]->setStaveModel(mStaveModelInnerBarrel);
     } else {
       mGeometry[j]->setStaveModel(mStaveModelOuterBarrel);
@@ -1049,15 +884,9 @@ void Detector::constructDetectorGeometry()
       mGeometry[j]->setSensorThick(mDetectorThickness[j]);
     }
 
-    for (int iw = 0; iw < mNumberOfWrapperVolumes; iw++) {
+    for (int iw = 0; iw < sNumberOfWrapperVolumes; iw++) {
       if (mLayerRadii[j] > mWrapperMinRadius[iw] && mLayerRadii[j] < mWrapperMaxRadius[iw]) {
         LOG(INFO) << "Will embed layer " << j << " in wrapper volume " << iw << FairLogger::endl;
-
-        if (mLayerZLength[j] >= mWrapperZSpan[iw]) {
-          LOG(FATAL) << "ZSpan " << mWrapperZSpan[iw] << " of wrapper volume " << iw
-                     << " is less than ZSpan " << mLayerZLength[j] << " of layer " << j
-                     << FairLogger::endl;
-        }
 
         dest = wrapVols[iw];
         mWrapperLayerId[j] = iw;
@@ -1116,8 +945,8 @@ void Detector::defineSensitiveVolumes()
 
   TString volumeName;
 
-  // The names of the ITS sensitive volumes have the format: ITSUSensor(0...mNumberLayers-1)
-  for (Int_t j = 0; j < mNumberLayers; j++) {
+  // The names of the ITS sensitive volumes have the format: ITSUSensor(0...sNumberLayers-1)
+  for (Int_t j = 0; j < sNumberLayers; j++) {
     volumeName = GeometryTGeo::getITSSensorPattern() + TString::Itoa(j, 10);
     v = geoManager->GetVolume(volumeName.Data());
     AddSensitiveVolume(v);
@@ -1125,25 +954,10 @@ void Detector::defineSensitiveVolumes()
 }
 
 Hit *Detector::addHit(int trackID, int detID, const TVector3& startPos, const TVector3& endPos, const TVector3& startMom, double startE,
-			double endTime, double eLoss, unsigned char startStatus, unsigned char endStatus)
+                        double endTime, double eLoss, unsigned char startStatus, unsigned char endStatus)
 {
   mHits->emplace_back(trackID, detID, startPos, endPos, startMom, startE, endTime, eLoss, startStatus, endStatus);
   return &(mHits->back());
-}
-
-TParticle *Detector::GetParticle() const
-{
-  // Returns the pointer to the TParticle for the particle that created
-  // this hit. From the TParticle all kinds of information about this
-  // particle can be found. See the TParticle class.
-  // Inputs:
-  //   none.
-  // Outputs:
-  //   none.
-  // Return:
-  //   The TParticle of the track that created this hit.
-  int trc = TVirtualMC::GetMC()->GetStack()->GetCurrentTrackNumber();
-  return ((o2::Data::Stack *) TVirtualMC::GetMC()->GetStack())->GetParticle(trc);
 }
 
 void Detector::Print(std::ostream *os) const

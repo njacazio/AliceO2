@@ -21,8 +21,7 @@
 #include "TPCSimulation/Digitizer.h"
 #include "TPCReconstruction/TrackTPC.h"
 #include "DetectorsBase/Track.h"
-#include "TPCSimulation/Cluster.h"
-#include "TPCSimulation/HwCluster.h"
+#include "TPCReconstruction/Cluster.h"
 #include "TPCBase/Mapper.h"
 #endif
 
@@ -44,7 +43,7 @@ void testTracks(int checkEvent = 0,
   TFile *clusFile = TFile::Open(clusterFile.data());
   TTree *clusterTree = (TTree *)gDirectory->Get("cbmsim");
 
-  std::vector<o2::TPC::HwCluster> *clusters=nullptr;
+  std::vector<o2::TPC::Cluster> *clusters=nullptr;
   clusterTree->SetBranchAddress("TPCClusterHW",&clusters);
 
   TGraph *grClusters   = new TGraph();
@@ -143,7 +142,7 @@ void testTracks(int checkEvent = 0,
         GlobalPosition3D clusGlob = Mapper::LocalToGlobal(clusLoc, cru.sector());
 
         // Track parameters are in local coordinate system - propagate to pad row of the cluster
-        trackObject.propagateParamTo(clusLoc.X(), bField);
+        trackObject.propagateTo(clusLoc.X(), bField);
 
         LocalPosition3D trackLoc(trackObject.getX(), trackObject.getY(), trackObject.getZ());
         /// \todo sector hardcoded for the time  being

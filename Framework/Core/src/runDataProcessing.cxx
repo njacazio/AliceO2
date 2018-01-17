@@ -16,16 +16,22 @@
 #include "Framework/DebugGUI.h"
 #include "Framework/DeviceControl.h"
 #include "Framework/DeviceInfo.h"
+#include "Framework/DeviceExecution.h"
 #include "Framework/DeviceSpec.h"
 #include "Framework/DeviceMetricsInfo.h"
 #include "Framework/FrameworkGUIDebugger.h"
 #include "Framework/SimpleMetricsService.h"
 #include "Framework/WorkflowSpec.h"
 #include "Framework/LocalRootFileService.h"
+#include "Framework/LogParsingHelpers.h"
 #include "Framework/TextControlService.h"
+#include "Framework/ParallelContext.h"
+#include "Framework/RawDeviceService.h"
+#include "Framework/SimpleRawDeviceService.h"
 
 #include "GraphvizHelpers.h"
 #include "DDSConfigHelpers.h"
+#include "DeviceSpecHelpers.h"
 #include "options/FairMQProgOptions.h"
 
 #include <cinttypes>
@@ -39,7 +45,6 @@
 #include <set>
 #include <string>
 
-#include <getopt.h>
 #include <csignal>
 #include <sys/resource.h>
 #include <sys/select.h>
@@ -47,6 +52,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <boost/program_options.hpp>
 
 
 #include <fairmq/DeviceRunner.h>
@@ -56,6 +62,14 @@ using namespace o2::framework;
 std::vector<DeviceInfo> gDeviceInfos;
 std::vector<DeviceMetricsInfo> gDeviceMetricsInfos;
 std::vector<DeviceControl> gDeviceControls;
+std::vector<DeviceExecution> gDeviceExecutions;
+
+namespace bpo = boost::program_options;
+
+// FIXME: probably find a better place
+// these are the device options added by the framework, but they can be
+// overloaded in the config spec
+bpo::options_description gHiddenDeviceOptions("Hidden child options");
 
 // Read from a given fd and print it.
 // return true if we can still read from it,
@@ -96,19 +110,28 @@ bool getChildData(int infd, DeviceInfo &outinfo) {
 // - TODO: allow single child view?
 // - TODO: allow last line per child mode?
 // - TODO: allow last error per child mode?
-int doParent(fd_set *in_fdset,
+void doParent(fd_set *in_fdset,
              int maxFd,
              std::vector<DeviceInfo> infos,
              std::vector<DeviceSpec> specs,
              std::vector<DeviceControl> controls,
              std::vector<DeviceMetricsInfo> metricsInfos,
-             std::map<int,size_t> &socket2Info) {
-  void *window = initGUI("O2 Framework debug GUI");
+             std::map<int,size_t> &socket2Info,
+             bool batch) {
+  void *window = nullptr;
+  decltype(getGUIDebugger(infos, specs, metricsInfos, controls)) debugGUICallback;
+
+  if (batch == false) {
+    window = initGUI("O2 Framework debug GUI");
+    debugGUICallback = getGUIDebugger(infos, specs, metricsInfos, controls);
+  }
+  if (batch == false && window == nullptr) {
+    LOG(WARN) << "Could not create GUI. Switching to batch mode. Do you have GLFW on your system?";
+    batch = true;
+  }
   // FIXME: I should really have some way of exiting the
   // parent..
-  auto debugGUICallback = getGUIDebugger(infos, specs, metricsInfos, controls);
-
-  while (pollGUI(window, debugGUICallback)) {
+  while (batch || pollGUI(window, debugGUICallback)) {
     // Exit this loop if all the children say they want to quit.
     bool allReadyToQuit = true;
     for (auto &info : infos) {
@@ -169,9 +192,12 @@ int doParent(fd_set *in_fdset,
       auto s = info.unprinted;
       size_t pos = 0;
       info.history.resize(info.historySize);
+      info.historyLevel.resize(info.historySize);
 
       while ((pos = s.find(delimiter)) != std::string::npos) {
           token = s.substr(0, pos);
+          auto logLevel = LogParsingHelpers::parseTokenLevel(token);
+
           // Check if the token is a metric from SimpleMetricsService
           // if yes, we do not print it out and simply store it to be displayed
           // in the GUI.
@@ -185,6 +211,7 @@ int doParent(fd_set *in_fdset,
             auto command = match[1];
             auto validFor = match[2];
             LOG(INFO) << "Found control command " << command
+                      << " from pid " << info.pid
                       << " valid for " << validFor;
             if (command == "QUIT") {
               if (validFor == "ALL") {
@@ -193,12 +220,21 @@ int doParent(fd_set *in_fdset,
                 }
               }
             }
-          } else if (!control.quiet && (strstr(token.c_str(), control.logFilter) != nullptr)) {
+          } else if (!control.quiet
+                     && (strstr(token.c_str(), control.logFilter) != nullptr)
+                     && logLevel >= control.logLevel ) {
             assert(info.historyPos >= 0);
             assert(info.historyPos < info.history.size());
             info.history[info.historyPos] = token;
+            info.historyLevel[info.historyPos] = logLevel;
             info.historyPos = (info.historyPos + 1) % info.history.size();
             std::cout << "[" << info.pid << "]: " << token << std::endl;
+          }
+          // We keep track of the maximum log error a
+          // device has seen.
+          if (logLevel > info.maxLogLevel
+              && logLevel > LogParsingHelpers::LogLevel::Info) {
+            info.maxLogLevel = logLevel;
           }
           s.erase(0, pos + delimiter.length());
       }
@@ -208,12 +244,13 @@ int doParent(fd_set *in_fdset,
     //        run the loop more often and update whenever enough time has
     //        passed.
   }
-  return 0;
 }
 
 int doChild(int argc, char **argv, const o2::framework::DeviceSpec &spec) {
-  std::cout << "Spawing new device " << spec.id
-            << " in process with pid " << getpid() << std::endl;
+  fair::mq::logger::ReinitLogger(false);
+
+  LOG(INFO) << "Spawing new device " << spec.id
+            << " in process with pid " << getpid();
   try {
     fair::mq::DeviceRunner runner{argc, argv};
 
@@ -221,7 +258,7 @@ int doChild(int argc, char **argv, const o2::framework::DeviceSpec &spec) {
     // declared in the workflow definition are allowed.
     runner.AddHook<fair::mq::hooks::SetCustomCmdLineOptions>([&spec](fair::mq::DeviceRunner& r){
       boost::program_options::options_description optsDesc;
-      populateBoostProgramOptions(optsDesc, spec.options);
+      populateBoostProgramOptions(optsDesc, spec.options, gHiddenDeviceOptions);
       r.fConfig.AddToCmdLineOptions(optsDesc, true);
     });
 
@@ -231,8 +268,11 @@ int doChild(int argc, char **argv, const o2::framework::DeviceSpec &spec) {
     serviceRegistry.registerService<MetricsService>(new SimpleMetricsService());
     serviceRegistry.registerService<RootFileService>(new LocalRootFileService());
     serviceRegistry.registerService<ControlService>(new TextControlService());
+    serviceRegistry.registerService<ParallelContext>(new ParallelContext(spec.rank, spec.nSlots));
 
     std::unique_ptr<FairMQDevice> device;
+    serviceRegistry.registerService<RawDeviceService>(new SimpleRawDeviceService(nullptr));
+
     if (spec.inputs.empty()) {
       LOG(DEBUG) << spec.id << " is a source\n";
       device.reset(new DataSourceDevice(spec, serviceRegistry));
@@ -240,6 +280,8 @@ int doChild(int argc, char **argv, const o2::framework::DeviceSpec &spec) {
       LOG(DEBUG) << spec.id << " is a processor\n";
       device.reset(new DataProcessingDevice(spec, serviceRegistry));
     }
+
+    serviceRegistry.get<RawDeviceService>().setDevice(device.get());
 
     runner.AddHook<fair::mq::hooks::InstantiateDevice>([&device](fair::mq::DeviceRunner& r){
       r.fDevice = std::shared_ptr<FairMQDevice>{std::move(device)};
@@ -284,39 +326,17 @@ int createPipes(int maxFd, int *pipes) {
     return maxFd;
 }
 
-
-void verifyWorkflow(const o2::framework::WorkflowSpec &specs) {
-  std::set<std::string> validNames;
-  std::vector<OutputSpec> availableOutputs;
-  std::vector<InputSpec> requiredInputs;
-
-  // An index many to one index to go from a given input to the
-  // associated spec
-  std::map<size_t, size_t> inputToSpec;
-  // A one to one index to go from a given output to the Spec emitting it
-  std::map<size_t, size_t> outputToSpec;
-
-  for (auto &spec : specs)
-  {
-    if (spec.name.empty())
-      throw std::runtime_error("Invalid DataProcessorSpec name");
-    if (validNames.find(spec.name) != validNames.end())
-      throw std::runtime_error("Name " + spec.name + " is used twice.");
-    for (auto &option : spec.options) {
-      if (option.type != option.defaultValue.type()) {
-        std::ostringstream ss;
-        ss << "Mismatch between declared option type and default value type"
-           << "for " << option.name << " in DataProcessorSpec of "
-           << spec.name;
-        throw std::runtime_error(ss.str());
-      }
-    }
-  }
-}
-
-// Kill all the active children
-void killChildren(std::vector<DeviceInfo> &infos) {
+// Kill all the active children. Exit code
+// is != 0 if any of the children had an error.
+int killChildren(std::vector<DeviceInfo> &infos) {
+  int exitCode = 0;
   for (auto &info : infos) {
+    if (exitCode == 0
+        && info.maxLogLevel >= LogParsingHelpers::LogLevel::Error){
+      LOG(ERROR) << "Child " << info.pid << " had at least one "
+                 << "message above severity ERROR";
+      exitCode = 1;
+    }
     if (!info.active) {
       continue;
     }
@@ -324,10 +344,16 @@ void killChildren(std::vector<DeviceInfo> &infos) {
     int status;
     waitpid(info.pid, &status, 0);
   }
+  return exitCode;
 }
 
+// FIXME: I should really do this gracefully, by doing the following:
+// - Kill all the children
+// - Set a sig_atomic_t to say we did.
+// - Wait for all the children to exit
+// - Return gracefully.
 static void handle_sigint(int signum) {
-  killChildren(gDeviceInfos);
+  auto exitCode = killChildren(gDeviceInfos);
   // We kill ourself after having killed all our children (SPOOKY!)
   signal(SIGINT, SIG_DFL);
   kill(getpid(), SIGINT);
@@ -335,7 +361,6 @@ static void handle_sigint(int signum) {
 
 void handle_sigchld(int sig) {
   int saved_errno = errno;
-  pid_t exited = -1;
   std::vector<pid_t> pids;
   while (true) {
     pid_t pid = waitpid((pid_t)(-1), nullptr, WNOHANG);
@@ -368,62 +393,77 @@ void handle_sigchld(int sig) {
 //   - Child, pick the data-processor ID and start a O2DataProcessorDevice for
 //     each DataProcessorSpec
 int doMain(int argc, char **argv, const o2::framework::WorkflowSpec & specs) {
-  static struct option longopts[] = {
-    {"quiet",     no_argument,  nullptr, 'q' },
-    {"stop",   no_argument,  nullptr, 's' },
-    {"batch", no_argument, nullptr, 'b'},
-    {"graphviz", no_argument, nullptr, 'g'},
-    {"dds", no_argument, nullptr, 'D'},
-    {"id", required_argument, nullptr, 'i'},
-    { nullptr,         0,            nullptr, 0 }
-  };
+  bpo::options_description executorOptions("Executor options");
+  executorOptions.add_options()
+    ((std::string("help") + ",h").c_str(),
+     "print this help")
+    ((std::string("quiet") + ",q").c_str(),
+     bpo::value<bool>()->zero_tokens()->default_value(false),
+     "quiet operation")
+    ((std::string("stop") + ",s").c_str(),
+     bpo::value<bool>()->zero_tokens()->default_value(false),
+     "stop before device start")
+    ((std::string("batch") + ",b").c_str(),
+     bpo::value<bool>()->zero_tokens()->default_value(false),
+     "batch processing mode")
+    ((std::string("graphviz") + ",g").c_str(),
+     bpo::value<bool>()->zero_tokens()->default_value(false),
+     "produce graph output")
+    ((std::string("dds") + ",D").c_str(),
+     bpo::value<bool>()->zero_tokens()->default_value(false),
+     "create DDS configuration");
 
-  bool defaultQuiet = false;
-  bool defaultStopped = false;
-  bool noGui = false;
-  bool graphViz = false;
-  bool generateDDS = false;
+  // some of the options must be forwarded by default to the device
+  executorOptions.add(DeviceSpecHelpers::getForwardedDeviceOptions());
+
+  gHiddenDeviceOptions.add_options()
+    ((std::string("id") + ",i").c_str(),
+     bpo::value<std::string>(),
+     "device id for child spawning")
+    ("channel-config",
+     bpo::value<std::vector<std::string>>(),
+     "channel configuration")
+    ("control",
+     "control plugin")
+    ("log-color",
+     "logging color scheme");
+
+  bpo::options_description visibleOptions;
+  visibleOptions.add(executorOptions);
+  // Use the hidden options as veto, all config specs matching a definition
+  // in the hidden options are skipped in order to avoid duplicate definitions
+  // in the main parser. Note: all config specs are forwarded to devices
+  visibleOptions.add(prepareOptionDescriptions(specs, gHiddenDeviceOptions));
+
+  bpo::options_description od;
+  od.add(visibleOptions);
+  od.add(gHiddenDeviceOptions);
+
+  // FIXME: decide about the policy for handling unrecognized arguments
+  // command_line_parser with option allow_unregistered() can be used
+  bpo::variables_map varmap;
+  bpo::store(bpo::parse_command_line(argc, argv, od), varmap);
+
+  bool defaultQuiet = varmap["quiet"].as<bool>();
+  bool defaultStopped = varmap["stop"].as<bool>();
+  bool batch = varmap["batch"].as<bool>();
+  bool graphViz = varmap["graphviz"].as<bool>();
+  bool generateDDS = varmap["dds"].as<bool>();
   std::string frameworkId;
-
-  int opt;
-  size_t safeArgsSize = sizeof(char**)*argc+1;
-  char **safeArgv = reinterpret_cast<char**>(malloc(safeArgsSize));
-  memcpy(safeArgv, argv, safeArgsSize);
-
-  while ((opt = getopt_long(argc, argv, "qsbgDi",longopts, nullptr)) != -1) {
-    switch (opt) {
-    case 'q':
-        defaultQuiet = true;
-        break;
-    case 's':
-        defaultStopped = true;
-        break;
-    case 'b':
-        noGui = true;
-        break;
-    case 'g':
-        graphViz = true;
-        break;
-    case 'D':
-        generateDDS = true;
-        break;
-    case 'i':
-        frameworkId = optarg;
-        break;
-    case ':':
-    case '?':
-    default: /* '?' */
-        // By default we ignore all the other options: we assume they will be
-        // need by on of the underlying devices.
-        break;
-    }
+  if (varmap.count("id")) frameworkId = varmap["id"].as<std::string>();
+  if (varmap.count("help")) {
+    bpo::options_description helpOptions;
+    helpOptions.add(executorOptions);
+    // this time no veto is applied, so all the options are added for printout
+    helpOptions.add(prepareOptionDescriptions(specs));
+    std::cout << helpOptions << std::endl;
+    exit(0);
   }
 
   std::vector<DeviceSpec> deviceSpecs;
 
   try {
-    verifyWorkflow(specs);
-    dataProcessorSpecs2DeviceSpecs(specs, deviceSpecs);
+    DeviceSpecHelpers::dataProcessorSpecs2DeviceSpecs(specs, deviceSpecs);
     // This should expand nodes so that we can build a consistent DAG.
   } catch (std::runtime_error &e) {
     std::cerr << "Invalid workflow: " << e.what() << std::endl;
@@ -436,26 +476,29 @@ int doMain(int argc, char **argv, const o2::framework::WorkflowSpec & specs) {
   if (frameworkId.empty() == false) {
     for (auto &spec : deviceSpecs) {
       if (spec.id == frameworkId) {
-        return doChild(argc, safeArgv, spec);
+        return doChild(argc, argv, spec);
       }
     }
-    LOG(ERROR) << "Unable to find component with id" << frameworkId;
+    LOG(ERROR) << "Unable to find component with id " << frameworkId;
   }
 
   assert(frameworkId.empty());
 
   gDeviceControls.resize(deviceSpecs.size());
-  prepareArguments(argc, argv, defaultQuiet,
-                   defaultStopped, deviceSpecs, gDeviceControls);
+  gDeviceExecutions.resize(deviceSpecs.size());
+
+  DeviceSpecHelpers::prepareArguments(
+      argc, argv, defaultQuiet,
+      defaultStopped, deviceSpecs, gDeviceExecutions, gDeviceControls);
 
   if (graphViz) {
     // Dump a graphviz representation of what I will do.
-    dumpDeviceSpec2Graphviz(std::cout, deviceSpecs);
+    GraphvizHelpers::dumpDeviceSpec2Graphviz(std::cout, deviceSpecs);
     exit(0);
   }
 
   if (generateDDS) {
-    dumpDeviceSpec2DDS(std::cout, deviceSpecs);
+    dumpDeviceSpec2DDS(std::cout, deviceSpecs, gDeviceExecutions);
     exit(0);
   }
 
@@ -479,6 +522,7 @@ int doMain(int argc, char **argv, const o2::framework::WorkflowSpec & specs) {
   for (size_t di = 0; di < deviceSpecs.size(); ++di) {
     auto &spec = deviceSpecs[di];
     auto &control = gDeviceControls[di];
+    auto &execution = gDeviceExecutions[di];
     int childstdout[2];
     int childstderr[2];
 
@@ -508,7 +552,7 @@ int doMain(int argc, char **argv, const o2::framework::WorkflowSpec & specs) {
       close(STDERR_FILENO);
       dup2(childstdout[1], STDOUT_FILENO);
       dup2(childstderr[1], STDERR_FILENO);
-      execvp(spec.args[0], spec.args.data());
+      execvp(execution.args[0], execution.args.data());
     }
 
     // This is the parent. We close the write end of
@@ -530,6 +574,7 @@ int doMain(int argc, char **argv, const o2::framework::WorkflowSpec & specs) {
     info.readyToQuit = false;
     info.historySize = 1000;
     info.historyPos = 0;
+    info.maxLogLevel = LogParsingHelpers::LogLevel::Debug;
 
     socket2DeviceInfo.insert(std::make_pair(childstdout[0], gDeviceInfos.size()));
     socket2DeviceInfo.insert(std::make_pair(childstderr[0], gDeviceInfos.size()));
@@ -543,13 +588,13 @@ int doMain(int argc, char **argv, const o2::framework::WorkflowSpec & specs) {
     FD_SET(childstderr[0], &childFdset);
   }
   maxFd += 1;
-  auto exitCode = doParent(&childFdset,
-                           maxFd,
-                           gDeviceInfos,
-                           deviceSpecs,
-                           gDeviceControls,
-                           gDeviceMetricsInfos,
-                           socket2DeviceInfo);
-  killChildren(gDeviceInfos);
-  return exitCode;
+  doParent(&childFdset,
+           maxFd,
+           gDeviceInfos,
+           deviceSpecs,
+           gDeviceControls,
+           gDeviceMetricsInfos,
+           socket2DeviceInfo,
+           batch);
+  return killChildren(gDeviceInfos);
 }

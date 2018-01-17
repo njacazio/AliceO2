@@ -11,27 +11,34 @@
 #include "Framework/MessageContext.h"
 #include "Framework/RootObjectContext.h"
 #include "Framework/DataSpecUtils.h"
+#include "Framework/DataProcessingHeader.h"
 #include <TClonesArray.h>
 
 namespace o2 {
 namespace framework {
+
+using DataHeader = o2::header::DataHeader;
+using DataDescription = o2::header::DataDescription;
+using DataProcessingHeader = o2::framework::DataProcessingHeader;
 
 DataAllocator::DataAllocator(FairMQDevice *device,
                              MessageContext *context,
                              RootObjectContext *rootContext,
                              const AllowedOutputsMap &outputs)
 : mDevice{device},
+  mAllowedOutputs{outputs},
   mContext{context},
-  mRootContext{rootContext},
-  mAllowedOutputs{outputs}
+  mRootContext{rootContext}
 {
 }
 
 std::string
-DataAllocator::matchDataHeader(const OutputSpec &spec) {
+DataAllocator::matchDataHeader(const OutputSpec &spec, size_t timeslice) {
+  // FIXME: we should take timeframeId into account as well.
   for (auto &output : mAllowedOutputs) {
-    if (DataSpecUtils::match(output.second, spec.origin, spec.description, spec.subSpec)) {
-      return output.first;
+    if (DataSpecUtils::match(output.matcher, spec.origin, spec.description, spec.subSpec)
+        && ((timeslice % output.maxTimeslices) == output.timeslice)) {
+      return output.channel;
     }
   }
   std::ostringstream str;
@@ -44,22 +51,33 @@ DataAllocator::matchDataHeader(const OutputSpec &spec) {
 
 DataChunk
 DataAllocator::newChunk(const OutputSpec &spec, size_t size) {
-  std::string channel = matchDataHeader(spec);
-  FairMQParts parts;
-  FairMQMessagePtr headerMessage = mDevice->NewMessageFor(channel, 0, sizeof(Header::DataHeader));
-  Header::DataHeader *header = reinterpret_cast<Header::DataHeader*>(headerMessage->GetData());
-  header->magicStringInt = o2::Header::BaseHeader::sMagicString;
-  header->dataOrigin = spec.origin;
-  header->dataDescription = spec.description;
-  header->subSpecification = spec.subSpec;
-  // FIXME: how do we want to use subchannels? time based parallelism?
+  std::string channel = matchDataHeader(spec, mContext->timeslice());
+
+  DataHeader dh;
+  dh.dataOrigin = spec.origin;
+  dh.dataDescription = spec.description;
+  dh.subSpecification = spec.subSpec;
+  dh.payloadSize = size;
+  dh.payloadSerializationMethod = o2::header::gSerializationMethodNone;
+
+  DataProcessingHeader dph{mContext->timeslice(), 1};
+  //we have to move the incoming data
+  o2::header::Stack headerStack{dh, dph};
+  FairMQMessagePtr headerMessage = mDevice->NewMessageFor(channel, 0,
+                                                          headerStack.buffer.get(),
+                                                          headerStack.bufferSize,
+                                                          &o2::header::Stack::freefn,
+                                                          headerStack.buffer.get());
+  headerStack.buffer.release();
   FairMQMessagePtr payloadMessage = mDevice->NewMessageFor(channel, 0, size);
   auto dataPtr = payloadMessage->GetData();
   auto dataSize = payloadMessage->GetSize();
+
+  FairMQParts parts;
   parts.AddPart(std::move(headerMessage));
   parts.AddPart(std::move(payloadMessage));
   assert(parts.Size() == 2);
-  mContext->addPart(std::move(parts), channel, 0);
+  mContext->addPart(std::move(parts), channel);
   assert(parts.Size() == 0);
   return DataChunk{reinterpret_cast<char*>(dataPtr), dataSize};
 }
@@ -68,13 +86,27 @@ DataChunk
 DataAllocator::adoptChunk(const OutputSpec &spec, char *buffer, size_t size, fairmq_free_fn *freefn, void *hint = nullptr) {
   // Find a matching channel, create a new message for it and put it in the
   // queue to be sent at the end of the processing
-  std::string channel = matchDataHeader(spec);
+  std::string channel = matchDataHeader(spec, mContext->timeslice());
+
+  DataHeader dh;
+  dh.dataOrigin = spec.origin;
+  dh.dataDescription = spec.description;
+  dh.subSpecification = spec.subSpec;
+  dh.payloadSize = size;
+  dh.payloadSerializationMethod = o2::header::gSerializationMethodNone;
+
+  DataProcessingHeader dph{mContext->timeslice(), 1};
+  //we have to move the incoming data
+  o2::header::Stack headerStack{dh, dph};
+  FairMQMessagePtr headerMessage = mDevice->NewMessageFor(channel, 0,
+                                                          headerStack.buffer.get(),
+                                                          headerStack.bufferSize,
+                                                          &o2::header::Stack::freefn,
+                                                          headerStack.buffer.get());
+  headerStack.buffer.release();
+
   FairMQParts parts;
-  FairMQMessagePtr headerMessage = mDevice->NewMessageFor(channel, 0, sizeof(Header::DataHeader));
-  Header::DataHeader *header = reinterpret_cast<Header::DataHeader*>(headerMessage->GetData());
-  header->dataOrigin = spec.origin;
-  header->dataDescription = spec.description;
-  header->subSpecification = spec.subSpec;
+
   // FIXME: how do we want to use subchannels? time based parallelism?
   FairMQMessagePtr payloadMessage = mDevice->NewMessageFor(channel, 0, buffer, size, freefn, hint);
   auto dataPtr = payloadMessage->GetData();
@@ -82,25 +114,62 @@ DataAllocator::adoptChunk(const OutputSpec &spec, char *buffer, size_t size, fai
   auto dataSize = payloadMessage->GetSize();
   parts.AddPart(std::move(headerMessage));
   parts.AddPart(std::move(payloadMessage));
-  mContext->addPart(std::move(parts), channel, 0);
+  mContext->addPart(std::move(parts), channel);
   return DataChunk{reinterpret_cast<char *>(dataPtr), dataSize};
 }
 
-TClonesArray&
-DataAllocator::newTClonesArray(const OutputSpec &spec, const char *className, size_t nElements) {
-  std::string channel = matchDataHeader(spec);
-  FairMQMessagePtr headerMessage = mDevice->NewMessageFor(channel, 0, sizeof(Header::DataHeader));
-  Header::DataHeader *header = reinterpret_cast<Header::DataHeader*>(headerMessage->GetData());
-  header->dataOrigin = spec.origin;
-  header->dataDescription = spec.description;
-  header->subSpecification = spec.subSpec;
-  header->payloadSize = 0; // We will override this at Send time.
-  auto payload = std::make_unique<TClonesArray>(className, nElements);
-  payload->SetOwner(kTRUE);
-  auto &result = *payload.get();
-  mRootContext->addObject(std::move(headerMessage), std::move(payload), channel, 0);
-  assert(payload.get() == 0);
-  return result;
+FairMQMessagePtr
+DataAllocator::headerMessageFromSpec(OutputSpec const &spec,
+                                     std::string const &channel,
+                                     o2::header::SerializationMethod method) {
+  DataHeader dh;
+  dh.dataOrigin = spec.origin;
+  dh.dataDescription = spec.description;
+  dh.subSpecification = spec.subSpec;
+  // the correct payload size is st later when sending the
+  // RootObjectContext, see DataProcessor::doSend
+  dh.payloadSize = 0;
+  dh.payloadSerializationMethod = method;
+
+  DataProcessingHeader dph{mContext->timeslice(), 1};
+  //we have to move the incoming data
+  o2::header::Stack headerStack{dh, dph};
+  FairMQMessagePtr headerMessage = mDevice->NewMessageFor(channel, 0,
+                                                          headerStack.buffer.get(),
+                                                          headerStack.bufferSize,
+                                                          &o2::header::Stack::freefn,
+                                                          headerStack.buffer.get());
+  headerStack.buffer.release();
+  return std::move(headerMessage);
+}
+
+void
+DataAllocator::addPartToContext(FairMQMessagePtr&& payloadMessage,
+                                const OutputSpec &spec,
+                                o2::header::SerializationMethod serializationMethod)
+{
+    std::string channel = matchDataHeader(spec, mRootContext->timeslice());
+    auto headerMessage = headerMessageFromSpec(spec, channel, serializationMethod);
+
+    FairMQParts parts;
+
+    // FIXME: this is kind of ugly, we know that we can change the content of the
+    // header message because we have just created it, but the API declares it const
+    const DataHeader *cdh = o2::header::get<DataHeader>(headerMessage->GetData());
+    DataHeader *dh = const_cast<DataHeader *>(cdh);
+    dh->payloadSize = payloadMessage->GetSize();
+    parts.AddPart(std::move(headerMessage));
+    parts.AddPart(std::move(payloadMessage));
+    mContext->addPart(std::move(parts), channel);
+}
+
+void
+DataAllocator::adopt(const OutputSpec &spec, TObject*ptr) {
+  std::unique_ptr<TObject> payload(ptr);
+  std::string channel = matchDataHeader(spec, mRootContext->timeslice());
+  auto header = headerMessageFromSpec(spec, channel, o2::header::gSerializationMethodROOT);
+  mRootContext->addObject(std::move(header), std::move(payload), channel);
+  assert(payload.get() == nullptr);
 }
 
 }

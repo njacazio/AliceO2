@@ -15,7 +15,8 @@ set(MODULE_BUCKET_NAME O2FrameworkCore_bucket)
 O2_SETUP(NAME ${MODULE_NAME})
 if (GLFW_FOUND)
   set(GUI_SOURCES src/FrameworkGUIDebugger.cxx
-                  src/FrameworkGUIDevicesGraph.cxx)
+                  src/FrameworkGUIDevicesGraph.cxx
+                  src/PaletteHelpers.cxx)
 else()
   set(GUI_SOURCES src/FrameworkDummyDebugger.cxx src/DummyDebugGUI.cxx)
 endif()
@@ -25,19 +26,26 @@ set(SRCS
     src/ConfigParamsHelper.cxx
     src/DataAllocator.cxx
     src/DataProcessingDevice.cxx
+    src/DataProcessingHeader.cxx
     src/DataProcessor.cxx
     src/DataRelayer.cxx
     src/DataSourceDevice.cxx
     src/DeviceMetricsInfo.cxx
     src/DeviceSpec.cxx
+    src/DeviceSpecHelpers.cxx
     src/DDSConfigHelpers.cxx
     src/FairOptionsRetriever.cxx
-    src/FairOptionsRetriever.cxx
     src/GraphvizHelpers.cxx
+    src/InputRecord.cxx
     src/LocalRootFileService.cxx
+    src/LogParsingHelpers.cxx
+    src/ExternalFairMQDeviceProxy.cxx
     src/SimpleMetricsService.cxx
     src/TextControlService.cxx
+    src/WorkflowHelpers.cxx
+    src/WorkflowSpec.cxx
     src/runDataProcessing.cxx
+    src/TMessageSerializer.cxx
     ${GUI_SOURCES}
    )
 
@@ -64,14 +72,25 @@ target_compile_options(test_SimpleDataProcessingDevice01 PUBLIC -O0 -g -fno-omit
 set(TEST_SRCS
       test/test_AlgorithmSpec.cxx
       test/test_BoostOptionsRetriever.cxx
-      test/test_Collections.cxx
+      test/test_DataRelayer.cxx
+      test/test_DataRefUtils.cxx
       test/test_DeviceMetricsInfo.cxx
+      test/test_DeviceSpec.cxx
       test/test_FrameworkDataFlowToDDS.cxx
       test/test_Graphviz.cxx
+      test/test_InputRecord.cxx
+      test/test_ParallelProducer.cxx
+      test/test_LogParsingHelpers.cxx
+      test/test_ExternalFairMQDeviceProxy.cxx
       test/test_Services.cxx
       test/test_SingleDataSource.cxx
       test/test_SuppressionGenerator.cxx
+      test/test_TimeParallelPipelining.cxx
+      test/test_TypeTraits.cxx
       test/test_Variants.cxx
+      test/test_WorkflowHelpers.cxx
+      test/test_WorkflowOptions.cxx
+      test/test_TMessageSerializer.cxx
    )
 
 O2_GENERATE_TESTS(

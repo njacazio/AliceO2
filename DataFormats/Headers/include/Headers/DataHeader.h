@@ -31,8 +31,6 @@
 #define ALICEO2_BASE_DATA_HEADER_
 
 #include <cstdint>
-#include <cstdio>
-#include <iostream>
 #include <memory>
 #include <cassert>
 #include <cstring> //needed for memcmp
@@ -41,7 +39,7 @@
 using byte = unsigned char;
 
 namespace o2 {
-namespace Header {
+namespace header {
 
 //__________________________________________________________________________________________________
 /// @defgroup aliceo2_dataformat_primitives Primitive data format definitions for ALICE O2
@@ -90,7 +88,7 @@ struct DataIdentifier;
 //__________________________________________________________________________________________________
 // internal implementations
 /// @ingroup aliceo2_dataformat_tools
-namespace Internal {
+namespace internal {
 // terminating initializer implementation
 template <typename T>
 constexpr T String2__()
@@ -142,13 +140,6 @@ struct defaultPrinter {
   void operator()(const char* str) const {}
 };
 
-/// helper wrapper to define a type from an integer, which can than
-/// be used as template argument
-template <int N>
-struct intWrapper {
-  static const int value = N;
-};
-
 /// compile time evaluation of a string length, which is either N - 1 or
 /// shorter if one character in the array has been set to 0.
 template <int N>
@@ -169,10 +160,10 @@ constexpr T String2(char c, Targs... Fargs)
   // be smaller than the size of the type and just pad with 0 like in the case
   // of a char array argument?
   static_assert(sizeof...(Targs) == sizeof(T) + 1 ||
-		sizeof...(Targs) == sizeof(T),
-		"number of arguments does not match the uint type width"
-		);
-  return Internal::String2__<T>(c, Fargs...);
+                sizeof...(Targs) == sizeof(T),
+                "number of arguments does not match the uint type width"
+                );
+  return internal::String2__<T>(c, Fargs...);
 }
 
 /// constexpr intializer, evaluated at compile time
@@ -185,8 +176,8 @@ constexpr T String2(const char (&str)[N])
   static_assert(std::is_integral<T>::value, "Non integral types not compatible with String2<type>");
   static_assert(N >= pos, "Position is larger than the length of string");
   static_assert(suppressAssert || N - pos <= sizeof(T) + 1,
-		"String parameter is longer than the size of the data type"
-		);
+                "String parameter is longer than the size of the data type"
+                );
   return((T) str[0+pos] |
          (str[0+pos] && sizeof(T) >= 2 ? ((T) str[1+pos] << (sizeof(T) >= 2 ? 8  : 0) |
          (str[1+pos] && sizeof(T) >= 4 ? ((T) str[2+pos] << (sizeof(T) >= 4 ? 16 : 0) |
@@ -231,15 +222,15 @@ struct DescriptorCompareTraits<2> {
 /// solution is working also for multiples of 64 bit, but then the itg member needs
 /// to be an array for all. This has not been enabled yet, first the implications
 /// have to be studied.
-template <std::size_t N, typename PrinterPolicy = Internal::defaultPrinter>
+template <std::size_t N, typename PrinterPolicy = internal::defaultPrinter>
 struct Descriptor {
-  static_assert(Internal::NumberOfActiveBits<N>::value == 1,
-		"Descriptor size is required to be a power of 2");
+  static_assert(internal::NumberOfActiveBits<N>::value == 1,
+                "Descriptor size is required to be a power of 2");
   using self_type = Descriptor<N>;
   static int const size = N;
   static int const bitcount = size*8;
-  static constexpr int arraySize = Internal::ArraySize<uint64_t, size>();
-  using ItgType = typename Internal::TraitsIntType<N>::Type;
+  static constexpr int arraySize = internal::ArraySize<uint64_t, size>();
+  using ItgType = typename internal::TraitsIntType<N>::Type;
 
   union {
     char     str[N];
@@ -320,11 +311,11 @@ using HeaderType = Descriptor<gSizeHeaderDescriptionString>;
 using SerializationMethod = Descriptor<gSizeSerializationMethodString>;
 
 //possible serialization types
-extern const o2::Header::SerializationMethod gSerializationMethodAny;
-extern const o2::Header::SerializationMethod gSerializationMethodInvalid;
-extern const o2::Header::SerializationMethod gSerializationMethodNone;
-extern const o2::Header::SerializationMethod gSerializationMethodROOT;
-extern const o2::Header::SerializationMethod gSerializationMethodFlatBuf;
+extern const o2::header::SerializationMethod gSerializationMethodAny;
+extern const o2::header::SerializationMethod gSerializationMethodInvalid;
+extern const o2::header::SerializationMethod gSerializationMethodNone;
+extern const o2::header::SerializationMethod gSerializationMethodROOT;
+extern const o2::header::SerializationMethod gSerializationMethodFlatBuf;
 
 //__________________________________________________________________________________________________
 /// @struct BaseHeader
@@ -350,8 +341,8 @@ struct BaseHeader
   static const uint32_t sMagicString;
 
   static const uint32_t sVersion;
-  static const o2::Header::HeaderType sHeaderType;
-  static const o2::Header::SerializationMethod sSerializationMethod;
+  static const o2::header::HeaderType sHeaderType;
+  static const o2::header::SerializationMethod sSerializationMethod;
 
   //__the data layout:
 
@@ -378,15 +369,15 @@ struct BaseHeader
   uint32_t    headerVersion;
 
   /// header type description, set by derived header
-  o2::Header::HeaderType description;
+  o2::header::HeaderType description;
 
   /// header serialization method, set by derived header
-  o2::Header::SerializationMethod serialization;
+  o2::header::SerializationMethod serialization;
 
   //___the functions:
 
   /// dont construct directly
-  BaseHeader();
+  BaseHeader() = delete;
   BaseHeader(const BaseHeader&) = default;
   /// Special ctor for initialization in derived types
   BaseHeader(uint32_t mySize, HeaderType description,
@@ -522,61 +513,9 @@ private:
 };
 
 //__________________________________________________________________________________________________
-/// @struct NameHeader
-/// @brief an example data header containing a name of an object as a null terminated char arr.
-/// this is a template! at instantiation the template parameter determines the
-/// size of the held string array.
-/// a caveat with decoding is you have to use Header::get<NameHeader<0>>(buffer)
-/// to get it out of a buffer. May improve in the future if enough people complain.
-/// @ingroup aliceo2_dataformats_dataheader
-template <size_t N>
-struct NameHeader : public BaseHeader {
-  static const uint32_t sVersion;
-  static const o2::Header::HeaderType sHeaderType;
-  static const o2::Header::SerializationMethod sSerializationMethod;
-  NameHeader()
-  : BaseHeader(sizeof(NameHeader), sHeaderType, sSerializationMethod, sVersion)
-  , name()
-  {
-    memset(&name[0],'\0',N);
-  }
-
-  NameHeader(std::string in)
-  : BaseHeader(sizeof(NameHeader), sHeaderType, sSerializationMethod, sVersion)
-  , name()
-  {
-    //std::copy(in.begin(), in.begin()+N, name);
-    // here we actually wnat a null terminated string
-    strncpy(name,in.c_str(),N);
-    name[N-1] = '\0';
-  }
-
-  NameHeader& operator=(const std::string string) {
-    std::copy(string.begin(), string.begin()+N, name);
-    return *this;
-  }
-private:
-  char name[N];
-};
-
-template <size_t N>
-const o2::Header::HeaderType NameHeader<N>::sHeaderType = "NameHead";
-
-// dirty trick to always have access to the headertypeID of a templated header type
-// TODO: find out if this can be done in a nicer way + is this realy necessary?
-template <>
-const o2::Header::HeaderType NameHeader<0>::sHeaderType;
-
-template <size_t N>
-const SerializationMethod NameHeader<N>::sSerializationMethod = gSerializationMethodNone;
-
-template <size_t N>
-const uint32_t NameHeader<N>::sVersion = 1;
-
-//__________________________________________________________________________________________________
 /// this 128 bit type for a header field describing the payload data type
 struct printDataDescription {
-  void operator()(const char* str) const { printf("Data origin  : %s\n", str); }
+  void operator()(const char* str) const;
 };
 
 using DataDescription = Descriptor<gSizeDataDescriptionString, printDataDescription>;
@@ -607,8 +546,8 @@ struct DataHeader : public BaseHeader
 
   //static data for this header type/version
   static const uint32_t sVersion;
-  static const o2::Header::HeaderType sHeaderType;
-  static const o2::Header::SerializationMethod sSerializationMethod;
+  static const o2::header::HeaderType sHeaderType;
+  static const o2::header::SerializationMethod sSerializationMethod;
 
   ///
   /// data type descriptor
@@ -676,33 +615,34 @@ struct DataHeader : public BaseHeader
 
 //__________________________________________________________________________________________________
 //possible data origins
-extern const o2::Header::DataOrigin gDataOriginAny;
-extern const o2::Header::DataOrigin gDataOriginInvalid;
-extern const o2::Header::DataOrigin gDataOriginFLP;
-extern const o2::Header::DataOrigin gDataOriginACO;
-extern const o2::Header::DataOrigin gDataOriginCPV;
-extern const o2::Header::DataOrigin gDataOriginCTP;
-extern const o2::Header::DataOrigin gDataOriginEMC;
-extern const o2::Header::DataOrigin gDataOriginFIT;
-extern const o2::Header::DataOrigin gDataOriginHMP;
-extern const o2::Header::DataOrigin gDataOriginITS;
-extern const o2::Header::DataOrigin gDataOriginMCH;
-extern const o2::Header::DataOrigin gDataOriginMFT;
-extern const o2::Header::DataOrigin gDataOriginMID;
-extern const o2::Header::DataOrigin gDataOriginPHS;
-extern const o2::Header::DataOrigin gDataOriginTOF;
-extern const o2::Header::DataOrigin gDataOriginTPC;
-extern const o2::Header::DataOrigin gDataOriginTRD;
-extern const o2::Header::DataOrigin gDataOriginZDC;
+extern const o2::header::DataOrigin gDataOriginAny;
+extern const o2::header::DataOrigin gDataOriginInvalid;
+extern const o2::header::DataOrigin gDataOriginFLP;
+extern const o2::header::DataOrigin gDataOriginACO;
+extern const o2::header::DataOrigin gDataOriginCPV;
+extern const o2::header::DataOrigin gDataOriginCTP;
+extern const o2::header::DataOrigin gDataOriginEMC;
+extern const o2::header::DataOrigin gDataOriginFIT;
+extern const o2::header::DataOrigin gDataOriginHMP;
+extern const o2::header::DataOrigin gDataOriginITS;
+extern const o2::header::DataOrigin gDataOriginMCH;
+extern const o2::header::DataOrigin gDataOriginMFT;
+extern const o2::header::DataOrigin gDataOriginMID;
+extern const o2::header::DataOrigin gDataOriginPHS;
+extern const o2::header::DataOrigin gDataOriginTOF;
+extern const o2::header::DataOrigin gDataOriginTPC;
+extern const o2::header::DataOrigin gDataOriginTRD;
+extern const o2::header::DataOrigin gDataOriginZDC;
 
 //possible data types
-extern const o2::Header::DataDescription gDataDescriptionAny;
-extern const o2::Header::DataDescription gDataDescriptionInvalid;
-extern const o2::Header::DataDescription gDataDescriptionRawData;
-extern const o2::Header::DataDescription gDataDescriptionClusters;
-extern const o2::Header::DataDescription gDataDescriptionTracks;
-extern const o2::Header::DataDescription gDataDescriptionConfig;
-extern const o2::Header::DataDescription gDataDescriptionInfo;
+extern const o2::header::DataDescription gDataDescriptionAny;
+extern const o2::header::DataDescription gDataDescriptionInvalid;
+extern const o2::header::DataDescription gDataDescriptionRawData;
+extern const o2::header::DataDescription gDataDescriptionClusters;
+extern const o2::header::DataDescription gDataDescriptionTracks;
+extern const o2::header::DataDescription gDataDescriptionConfig;
+extern const o2::header::DataDescription gDataDescriptionInfo;
+extern const o2::header::DataDescription gDataDescriptionROOTStreamers;
 /// @} // end of doxygen group
 
 //__________________________________________________________________________________________________
@@ -744,15 +684,19 @@ static_assert(sizeof(DataOrigin) == 4,
 static_assert(sizeof(DataHeader) == 80,
               "DataHeader struct must be of size 80");
 static_assert(gSizeMagicString == sizeof(BaseHeader::magicStringInt),
-	      "Size mismatch in magic string union");
+              "Size mismatch in magic string union");
 static_assert(sizeof(BaseHeader::sMagicString) == sizeof(BaseHeader::magicStringInt),
-	      "Inconsitent size of global magic identifier");
+              "Inconsitent size of global magic identifier");
 
 //__________________________________________________________________________________________________
 ///helper function to print a hex/ASCII dump of some memory
 void hexDump (const char* desc, const void* voidaddr, size_t len, size_t max=0);
 
-} //namespace Header
+} //namespace header
+
+// 2017-12-21: keep an alias for a short while after renaming the namespace
+// to lower case, supports pull request currently open
+namespace Header = header;
 } //namespace o2
 
 #endif

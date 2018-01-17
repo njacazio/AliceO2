@@ -63,6 +63,10 @@ class Detector : public o2::Base::DetImpl<Detector>
 	kOBModel2 = 9 
     };
 
+    static constexpr Int_t sNumberLayers = 7; ///< Number of layers in ITSU
+    static constexpr Int_t sNumberInnerLayers = 3; ///< Number of inner layers in ITSU
+    static constexpr Int_t sNumberOfWrapperVolumes = 3; ///< Number of wrapper volumes
+
     /// Name : Detector Name
     /// Active: kTRUE for active detectors (ProcessHits() will be called)
     ///         kFALSE for inactive detectors
@@ -113,7 +117,6 @@ class Detector : public o2::Base::DetImpl<Detector>
     /// \param nlay layer number
     /// \param phi0 layer phi0
     /// \param r layer radius
-    /// \param zlen layer length
     /// \param nstav number of staves
     /// \param nunit IB: number of chips per stave
     /// \param OB: number of modules per half stave
@@ -121,7 +124,7 @@ class Detector : public o2::Base::DetImpl<Detector>
     /// \param dthick detector thickness (if omitted, defaults to 0)
     /// \param dettypeID ??
     /// \param buildLevel (if 0, all geometry is build, used for material budget studies)
-    void defineLayer(Int_t nlay, Double_t phi0, Double_t r, Double_t zlen, Int_t nladd, Int_t nmod,
+    void defineLayer(Int_t nlay, Double_t phi0, Double_t r, Int_t nladd, Int_t nmod,
                              Double_t lthick = 0., Double_t dthick = 0., UInt_t detType = 0, Int_t buildFlag = 0) override;
 
     /// Sets the layer parameters for a "turbo" layer
@@ -129,7 +132,6 @@ class Detector : public o2::Base::DetImpl<Detector>
     /// \param nlay layer number
     /// \param phi0 phi of 1st stave
     /// \param r layer radius
-    /// \param zlen layer length
     /// \param nstav number of staves
     /// \param nunit IB: number of chips per stave
     /// \param OB: number of modules per half stave
@@ -139,7 +141,7 @@ class Detector : public o2::Base::DetImpl<Detector>
     /// \param dthick detector thickness (if omitted, defaults to 0)
     /// \param dettypeID ??
     /// \param buildLevel (if 0, all geometry is build, used for material budget studies)
-    void defineLayerTurbo(Int_t nlay, Double_t phi0, Double_t r, Double_t zlen, Int_t nladd, Int_t nmod,
+    void defineLayerTurbo(Int_t nlay, Double_t phi0, Double_t r, Int_t nladd, Int_t nmod,
                                   Double_t width, Double_t tilt, Double_t lthick = 0., Double_t dthick = 0.,
                                   UInt_t detType = 0, Int_t buildFlag = 0) override;
 
@@ -147,7 +149,6 @@ class Detector : public o2::Base::DetImpl<Detector>
     /// \param nlay layer number
     /// \param phi0 phi of 1st stave
     /// \param r layer radius
-    /// \param zlen layer length
     /// \param nstav number of staves
     /// \param nmod IB: number of chips per stave
     /// \param OB: number of modules per half stave
@@ -156,7 +157,7 @@ class Detector : public o2::Base::DetImpl<Detector>
     /// \param lthick stave thickness
     /// \param dthick detector thickness
     /// \param dettype detector type
-    virtual void getLayerParameters(Int_t nlay, Double_t &phi0, Double_t &r, Double_t &zlen, Int_t &nladd, Int_t &nmod,
+    virtual void getLayerParameters(Int_t nlay, Double_t &phi0, Double_t &r, Int_t &nladd, Int_t &nmod,
                                     Double_t &width, Double_t &tilt, Double_t &lthick, Double_t &mthick,
                                     UInt_t &dettype) const;
 
@@ -164,9 +165,6 @@ class Detector : public o2::Base::DetImpl<Detector>
     o2::ITSMFT::Hit *addHit(int trackID, int detID, const TVector3& startPos, const TVector3& endPos, const TVector3& startMom,
 				   double startE, double endTime, double eLoss,
 				   unsigned char startStatus, unsigned char endStatus);
-
-    /// Book arrays for wrapper volumes
-    void setNumberOfWrapperVolumes(Int_t n) override;
 
     /// Set per wrapper volume parameters
     void defineWrapperVolume(Int_t id, Double_t rmin, Double_t rmax, Double_t zspan) override;
@@ -208,11 +206,6 @@ class Detector : public o2::Base::DetImpl<Detector>
       ;
     }
 
-    /// Returns the pointer to the TParticle for the particle that created
-    /// this hit. From the TParticle all kinds of information about this
-    /// particle can be found. See the TParticle class.
-    virtual TParticle *GetParticle() const;
-
     /// Prints out the content of this class in ASCII format
     /// \param ostream *os The output stream
     void Print(std::ostream *os) const;
@@ -224,7 +217,7 @@ class Detector : public o2::Base::DetImpl<Detector>
     /// Returns the number of layers
     Int_t getNumberOfLayers() const
     {
-      return mNumberLayers;
+      return sNumberLayers;
     }
 
     virtual void setStaveModelIB(Model model)
@@ -253,9 +246,8 @@ class Detector : public o2::Base::DetImpl<Detector>
     GeometryTGeo *mGeometryTGeo; //! access to geometry details
 
   protected:
-    Int_t *mLayerID;               //! [mNumberLayers] layer identifier
-    Int_t mNumberLayers;           //! Number of layers
-    TString *mLayerName;           //! [mNumberLayers] layer identifier
+    Int_t mLayerID[sNumberLayers];     //! [sNumberLayers] layer identifier
+    TString mLayerName[sNumberLayers]; //! [sNumberLayers] layer identifier
 
   private:
     /// this is transient data about track passing the sensor
@@ -277,23 +269,22 @@ class Detector : public o2::Base::DetImpl<Detector>
 
     Bool_t mModifyGeometry;
 
-    Int_t mNumberOfWrapperVolumes; //! number of wrapper volumes
-    Double_t *mWrapperMinRadius;   //! min radius of wrapper volume
-    Double_t *mWrapperMaxRadius;   //! max radius of wrapper volume
-    Double_t *mWrapperZSpan;       //! Z span of wrapper volume
-    Int_t *mWrapperLayerId;        //! id of wrapper layer to which layer belongs (-1 if not wrapped)
-    Bool_t *mTurboLayer;           //! True for "turbo" layers
-    Double_t *mLayerPhi0;          //! Vector of layer's 1st stave phi in lab
-    Double_t *mLayerRadii;         //! Vector of layer radii
-    Double_t *mLayerZLength;       //! Vector of layer length along Z
-    Int_t *mStavePerLayer;         //! Vector of number of staves per layer
-    Int_t *mUnitPerStave;          //! Vector of number of "units" per stave
-    Double_t *mChipThickness;      //! Vector of chip thicknesses
-    Double_t *mStaveWidth;         //! Vector of stave width (only used for turbo)
-    Double_t *mStaveTilt;          //! Vector of stave tilt (only used for turbo)
-    Double_t *mDetectorThickness;  //! Vector of detector thicknesses
-    UInt_t *mChipTypeID;           //! Vector of detector type id
-    Int_t *mBuildLevel;            //! Vector of Material Budget Studies
+    Double_t mWrapperMinRadius[sNumberOfWrapperVolumes]; //! Min radius of wrapper volume
+    Double_t mWrapperMaxRadius[sNumberOfWrapperVolumes]; //! Max radius of wrapper volume
+    Double_t mWrapperZSpan[sNumberOfWrapperVolumes];     //! Z span of wrapper volume
+    Int_t mWrapperLayerId[sNumberLayers];  //! Id of wrapper layer to which layer belongs (-1 if not wrapped)
+
+    Bool_t mTurboLayer[sNumberLayers];     //! True for "turbo" layers
+    Double_t mLayerPhi0[sNumberLayers];    //! Vector of layer's 1st stave phi in lab
+    Double_t mLayerRadii[sNumberLayers];   //! Vector of layer radii
+    Int_t mStavePerLayer[sNumberLayers];   //! Vector of number of staves per layer
+    Int_t mUnitPerStave[sNumberLayers];    //! Vector of number of "units" per stave
+    Double_t mChipThickness[sNumberLayers];//! Vector of chip thicknesses
+    Double_t mStaveWidth[sNumberLayers];   //! Vector of stave width (only used for turbo)
+    Double_t mStaveTilt[sNumberLayers];    //! Vector of stave tilt (only used for turbo)
+    Double_t mDetectorThickness[sNumberLayers];//! Vector of detector thicknesses
+    UInt_t mChipTypeID[sNumberLayers];     //! Vector of detector type id
+    Int_t mBuildLevel[sNumberLayers];      //! Vector of Material Budget Studies
 
     /// Container for hit data
     std::vector<o2::ITSMFT::Hit>* mHits;
@@ -316,9 +307,9 @@ class Detector : public o2::Base::DetImpl<Detector>
 
     MisalignmentParameter *mMisalignmentParameter;
 
-    V3Layer **mGeometry;   //! Geometry
     Model mStaveModelInnerBarrel; //! The stave model for the Inner Barrel
     Model mStaveModelOuterBarrel; //! The stave model for the Outer Barrel
+    V3Layer *mGeometry[sNumberLayers]; //! Geometry
 
   ClassDefOverride(Detector, 1)
 };

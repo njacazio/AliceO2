@@ -53,7 +53,7 @@ class GeometryManager : public TObject
   static int getSensID(DetID detid, int sensid)
   {
     /// compose combined detector+sensor ID for sensitive volumes
-    return (detid.getMask() << sDetOffset) | (sensid & sSensorMask);
+    return (detid.getMask().to_ulong() << sDetOffset) | (sensid & sSensorMask);
   }
 
   /// Default destructor
@@ -99,9 +99,7 @@ class GeometryManager : public TObject
   /// Returns kFALSE in case TGeo has not been initialized or the volume path is not valid.
   static Bool_t getOriginalMatrixFromPath(const char* path, TGeoHMatrix& m);
 
-  static TGeoManager* sGeometry;
-
- protected:
+ private:
   /// sensitive volume identifier composed from (det_mask<<sDetOffset)|(sensid&sSensorMask)
   static constexpr UInt_t sDetOffset = 16; /// detector identifier will start from this bit
   static constexpr UInt_t sSensorMask =
@@ -109,7 +107,6 @@ class GeometryManager : public TObject
 
   ClassDefOverride(GeometryManager, 0); // Manager of geometry information for alignment
 };
-
 }
 }
 

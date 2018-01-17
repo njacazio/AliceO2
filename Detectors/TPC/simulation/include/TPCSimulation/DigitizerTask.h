@@ -64,12 +64,17 @@ class DigitizerTask : public FairTask{
       
     void FinishTask() override;
 
+    /// Temporary stuff for bunch train simulation
+    ///
+    /// Initialise the event times using a bunch train structure
+    /// \param numberOfEvents number of event times to simulate
+    void initBunchTrainStructure(const size_t numberOfEvents);
   private:
     Digitizer           *mDigitizer;    ///< Digitization process
     DigitContainer      *mDigitContainer;
       
     std::vector<o2::TPC::Digit> *mDigitsArray = nullptr;  ///< Array of the Digits, passed from the digitization
-    o2::dataformats::MCTruthContainer<o2::MCCompLabel> mMCTruthArray; ///< Array for MCTruth information associated to digits in mDigitsArrray. Passed from the digitization
+    o2::dataformats::MCTruthContainer<o2::MCCompLabel> *mMCTruthArray = nullptr; ///< Array for MCTruth information associated to digits in mDigitsArrray. Passed from the digitization
     std::vector<o2::TPC::DigitMCMetaData> *mDigitsDebugArray = nullptr;  ///< Array of the Digits, for debugging purposes only, passed from the digitization
     
     int                 mTimeBinMax;   ///< Maximum time bin to be written out
@@ -78,6 +83,10 @@ class DigitizerTask : public FairTask{
     int                 mHitSector=-1; ///< which sector to treat
 
     const std::vector<o2::TPC::HitGroup> *mSectorHitsArray[Sector::MAXSECTOR];
+
+    // Temporary stuff for bunch train structure simulation
+    std::vector<float> mEventTimes; ///< Simulated event times in us
+    int                mCurrentEvent = 0; ///< Current event
 
     ClassDefOverride(DigitizerTask, 1);
 };

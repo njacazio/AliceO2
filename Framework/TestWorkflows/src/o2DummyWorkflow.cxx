@@ -8,7 +8,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include "Framework/DataRefUtils.h"
-#include "Framework/ServiceRegistry.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/MetricsService.h"
 #include "FairMQLogger.h"
@@ -27,28 +26,24 @@ struct Summary {
   int clustersCount;
 };
 
-using DataHeader = o2::Header::DataHeader;
-
-using Inputs = std::vector<InputSpec>;
-using Outputs = std::vector<OutputSpec>;
+using DataHeader = o2::header::DataHeader;
+using DataOrigin = o2::header::DataOrigin;
 
 // This is how you can define your processing in a declarative way
 void defineDataProcessing(std::vector<DataProcessorSpec> &specs) {
   DataProcessorSpec timeframeReader{
     "reader",
     Inputs{},
-    Outputs{
-      {"TPC", "CLUSTERS", OutputSpec::Timeframe},
-      {"ITS", "CLUSTERS", OutputSpec::Timeframe}
+    {
+      OutputSpec{"TPC", "CLUSTERS", OutputSpec::Timeframe},
+      OutputSpec{"ITS", "CLUSTERS", OutputSpec::Timeframe}
     },
     AlgorithmSpec{
-      [](const std::vector<DataRef> inputs,
-         ServiceRegistry& services,
-         DataAllocator& allocator) {
+      [](ProcessingContext &ctx) {
        sleep(1);
        // Creates a new message of size 1000 which
        // has "TPC" as data origin and "CLUSTERS" as data description.
-       auto tpcClusters = allocator.newCollectionChunk<FakeCluster>(OutputSpec{"TPC", "CLUSTERS", 0}, 1000);
+       auto tpcClusters = ctx.allocator().make<FakeCluster>(OutputSpec{"TPC", "CLUSTERS", 0}, 1000);
        int i = 0;
 
        for (auto &cluster : tpcClusters) {
@@ -60,7 +55,7 @@ void defineDataProcessing(std::vector<DataProcessorSpec> &specs) {
          i++;
        }
 
-       auto itsClusters = allocator.newCollectionChunk<FakeCluster>(OutputSpec{"ITS", "CLUSTERS", 0}, 1000);
+       auto itsClusters = ctx.allocator().make<FakeCluster>(OutputSpec{"ITS", "CLUSTERS", 0}, 1000);
        i = 0;
        for (auto &cluster : itsClusters) {
          assert(i < 1000);
@@ -77,23 +72,21 @@ void defineDataProcessing(std::vector<DataProcessorSpec> &specs) {
 
   DataProcessorSpec tpcClusterSummary {
     "tpc-cluster-summary",
-    Inputs{
-       {"TPC", "CLUSTERS", InputSpec::Timeframe}
+    {
+       InputSpec{"clusters", "TPC", "CLUSTERS", InputSpec::Timeframe}
     },
-    Outputs{
-       {"TPC", "SUMMARY", OutputSpec::Timeframe}
+    {
+       OutputSpec{"TPC", "SUMMARY", OutputSpec::Timeframe}
     },
     AlgorithmSpec{
-    [](const std::vector<DataRef> inputs,
-       ServiceRegistry& services,
-       DataAllocator& allocator)
+    [](ProcessingContext &ctx)
       {
-        auto tpcSummary = allocator.newCollectionChunk<Summary>(OutputSpec{"TPC", "SUMMARY", 0}, 1);
-        tpcSummary.at(0).inputCount = inputs.size();
+        auto tpcSummary = ctx.allocator().make<Summary>(OutputSpec{"TPC", "SUMMARY", 0}, 1);
+        tpcSummary.at(0).inputCount = ctx.inputs().size();
       }
     },
     {
-      ConfigParamSpec{"some-cut", VariantType::Float, 1.0f}
+      ConfigParamSpec{"some-cut", VariantType::Float, 1.0f, {"some cut"}}
     },
     {
       "CPUTimer"
@@ -102,22 +95,20 @@ void defineDataProcessing(std::vector<DataProcessorSpec> &specs) {
 
   DataProcessorSpec itsClusterSummary {
     "its-cluster-summary",
-    Inputs{
-      {"ITS", "CLUSTERS", InputSpec::Timeframe}
+    {
+      InputSpec{"clusters", "ITS", "CLUSTERS", InputSpec::Timeframe}
     },
-    Outputs{
-      {"ITS", "SUMMARY", OutputSpec::Timeframe},
+    {
+      OutputSpec{"ITS", "SUMMARY", OutputSpec::Timeframe},
     },
     AlgorithmSpec{
-      [](const std::vector<DataRef> inputs,
-         ServiceRegistry& services,
-         DataAllocator& allocator) {
-        auto itsSummary = allocator.newCollectionChunk<Summary>(OutputSpec{"ITS", "SUMMARY", 0}, 1);
-        itsSummary.at(0).inputCount = inputs.size();
+      [](ProcessingContext &ctx) {
+        auto itsSummary = ctx.allocator().make<Summary>(OutputSpec{"ITS", "SUMMARY", 0}, 1);
+        itsSummary.at(0).inputCount = ctx.inputs().size();
       }
     },
     {
-      ConfigParamSpec{"some-cut", VariantType::Float, 1.0f}
+      ConfigParamSpec{"some-cut", VariantType::Float, 1.0f, {"some cut"}}
     },
     {
       "CPUTimer"
@@ -126,37 +117,36 @@ void defineDataProcessing(std::vector<DataProcessorSpec> &specs) {
 
   DataProcessorSpec merger{
     "merger",
-    Inputs{
-      {"TPC", "CLUSTERS", InputSpec::Timeframe},
-      {"TPC", "SUMMARY", InputSpec::Timeframe},
-      {"ITS", "SUMMARY", InputSpec::Timeframe}
+    {
+      InputSpec{"clusters", "TPC", "CLUSTERS", InputSpec::Timeframe},
+      InputSpec{"summary", "TPC", "SUMMARY", InputSpec::Timeframe},
+      InputSpec{"other_summary", "ITS", "SUMMARY", InputSpec::Timeframe}
     },
     Outputs{},
     AlgorithmSpec{
-      [](const std::vector<DataRef> inputs,
-         ServiceRegistry& services,
-         DataAllocator& allocator) {
+      [](ProcessingContext &ctx) {
         // We verify we got inputs in the correct order
-        auto h0 = reinterpret_cast<const DataHeader*>(inputs[0].header);
-        auto h1 = reinterpret_cast<const DataHeader*>(inputs[1].header);
-        auto h2 = reinterpret_cast<const DataHeader*>(inputs[2].header);
-        if (h0->dataOrigin != o2::Header::DataOrigin("TPC")) {
-          throw std::runtime_error("Unexpected data origin");
+        auto h0 = o2::header::get<DataHeader>(ctx.inputs().get("clusters").header);
+        auto h1 = o2::header::get<DataHeader>(ctx.inputs().get("summary").header);
+        auto h2 = o2::header::get<DataHeader>(ctx.inputs().get("other_summary").header);
+        // This should always be the case, since the 
+        // test for an actual DataHeader should happen in the device itself.
+        assert(h0 && h1 && h2);
+        if (h0->dataOrigin != o2::header::DataOrigin("TPC")) {
+          throw std::runtime_error("Unexpected data origin" + std::string(h0->dataOrigin.str));
         }
 
-        if (h1->dataOrigin != o2::Header::DataOrigin("TPC")) {
-          throw std::runtime_error("Unexpected data origin");
+        if (h1->dataOrigin != o2::header::DataOrigin("TPC")) {
+          throw std::runtime_error("Unexpected data origin" + std::string(h1->dataOrigin.str));
         }
 
-        if (h1->dataOrigin != o2::Header::DataOrigin("ITS")) {
-          throw std::runtime_error("Unexpected data origin");
+        if (h2->dataOrigin != o2::header::DataOrigin("ITS")) {
+          throw std::runtime_error("Unexpected data origin" + std::string(h2->dataOrigin.str));
         }
 
-        LOG(DEBUG) << "Consumer Invoked";
-        LOG(DEBUG) << "Number of inputs" << inputs.size();
-        auto &metrics = services.get<MetricsService>();
+        auto &metrics = ctx.services().get<MetricsService>();
         metrics.post("merger/invoked", 1);
-        metrics.post("merger/inputs", (int) inputs.size());
+        metrics.post("merger/inputs", (int) ctx.inputs().size());
       },
     }
   };

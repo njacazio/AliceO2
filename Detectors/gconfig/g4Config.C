@@ -6,6 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include "commonConfig.C"
+
 // Configuration macro for Geant4 VirtualMC
 void Config()
 {
@@ -36,29 +38,26 @@ void Config()
 /// When more than one options are selected, they should be separated with '+'
 /// character: eg. stepLimit+specialCuts.
 
-   // Geant4 VMC 2.x
-   // TG4RunConfiguration* runConfiguration
-   //         = new TG4RunConfiguration("geomRoot", "QGSP_FTFP_BERT", "stepLimiter+specialCuts+specialControls+stackPopper");
-
    //Geant4 VMC 3.x
    Bool_t mtMode = false;
+   Bool_t specialStacking = true; // leads to default stack behaviour in which new primaries are only started if the previous
+                                  // one and all of its secondaries have been transported
+                                  // any other choice is dangerously inconsistent with the FinishPrimary() interface of VMCApp
    TG4RunConfiguration* runConfiguration
     = new TG4RunConfiguration("geomRoot", "QGSP_FTFP_BERT", "stepLimiter+specialCuts",
-                              false, mtMode);
+                              specialStacking, mtMode);
 
 /// Create the G4 VMC
    TGeant4* geant4 = new TGeant4("TGeant4", "The Geant4 Monte Carlo", runConfiguration);
    cout << "Geant4 has been created." << endl;
 
-/// create the Specific stack
-   o2::Data::Stack *stack = new o2::Data::Stack(1000);
-   stack->StoreSecondaries(kTRUE);
-   stack->setMinHits(0);
-   geant4->SetStack(stack);
+   // setup the stack
+   stackSetup(geant4, FairRunSim::Instance());
 
+   // setup decayer
    if(FairRunSim::Instance()->IsExtDecayer()){
-      TVirtualMCDecayer* decayer = TPythia6Decayer::Instance();
-      geant4->SetExternalDecayer(decayer);
+     TVirtualMCDecayer* decayer = TPythia6Decayer::Instance();
+     geant4->SetExternalDecayer(decayer);
    }
 
 /// Customise Geant4 setting

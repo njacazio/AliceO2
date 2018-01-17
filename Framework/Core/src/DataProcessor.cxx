@@ -12,12 +12,11 @@
 #include "Framework/MessageContext.h"
 #include "Framework/TMessageSerializer.h"
 #include "Headers/DataHeader.h"
-#include <TClonesArray.h>
 #include <fairmq/FairMQParts.h>
 #include <fairmq/FairMQDevice.h>
 
 using namespace o2::framework;
-using DataHeader = o2::Header::DataHeader;
+using DataHeader = o2::header::DataHeader;
 
 namespace o2 {
 namespace framework {
@@ -29,27 +28,26 @@ void DataProcessor::doSend(FairMQDevice &device, MessageContext &context) {
     FairMQParts parts = std::move(message.parts);
     assert(message.parts.Size() == 0);
     assert(parts.Size() == 2);
-    assert(parts.At(0)->GetSize() == 80);
-    device.Send(parts, message.channel, message.index);
+    device.Send(parts, message.channel, 0);
     assert(parts.Size() == 2);
   }
 }
 
 void DataProcessor::doSend(FairMQDevice &device, RootObjectContext &context) {
-  for (auto &message : context) {
-    assert(message.payload.get());
+  for (auto &messageRef : context) {
+    assert(messageRef.payload.get());
     FairMQParts parts;
     FairMQMessagePtr payload(device.NewMessage());
-    TClonesArray *a = reinterpret_cast<TClonesArray*>(message.payload.get());
+    auto a = messageRef.payload.get();
     device.Serialize<TMessageSerializer>(*payload, a);
-    const DataHeader *cdh = reinterpret_cast<const DataHeader*>(message.header->GetData());
+    const DataHeader *cdh = o2::header::get<DataHeader>(messageRef.header->GetData());
     // sigh... See if we can avoid having it const by not
     // exposing it to the user in the first place.
     DataHeader *dh = const_cast<DataHeader *>(cdh);
     dh->payloadSize = payload->GetSize();
-    parts.AddPart(std::move(message.header));
+    parts.AddPart(std::move(messageRef.header));
     parts.AddPart(std::move(payload));
-    device.Send(parts, message.channel, message.index);
+    device.Send(parts, messageRef.channel, 0);
   }
 }
 

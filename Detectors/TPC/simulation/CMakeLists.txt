@@ -52,12 +52,6 @@ install(
   DESTINATION share/Detectors/TPC/
 )
 
-#Set(Exe_Names
-#)
-
-#Set(Exe_Source
-#)
-
 # todo we repeat ourselves because the macro O2_GENERATE_LIBRARY dares deleting the variables we pass to it.
 set(BUCKET_NAME tpc_simulation_bucket)
 set(LIBRARY_NAME ${MODULE_NAME})
@@ -68,8 +62,7 @@ set(LIBRARY_NAME ${MODULE_NAME})
 #foreach (_file RANGE 0 ${_length}) # loop over a range because we traverse 2 lists and not 1
   #list(GET Exe_Names ${_file} _name)
   #list(GET Exe_Source ${_file} _src)
-##  Set(EXE_NAME ${_name})
-##  Set(SRCS ${_src})
+  ## FIXME: propably a copy paste remnant, remove?
 ##  Set(DEPENDENCIES CCDB)
   #O2_GENERATE_EXECUTABLE(
       #EXE_NAME ${_name}
@@ -96,9 +89,9 @@ O2_GENERATE_TESTS(
 
 # add the TPC run sim as a unit test (if simulation was enabled)
 if (HAVESIMULATION)
-  add_test(NAME tpcsim_G4 COMMAND ${CMAKE_BINARY_DIR}/bin/tpc-run-sim -n 2 -e  TGeant4)
+  add_test(NAME tpcsim_G4 COMMAND ${CMAKE_BINARY_DIR}/bin/runTPC -n 2 -e  TGeant4)
   set_tests_properties(tpcsim_G4 PROPERTIES PASS_REGULAR_EXPRESSION "Macro finished succesfully")
-  add_test(NAME tpcsim_G3 COMMAND ${CMAKE_BINARY_DIR}/bin/tpc-run-sim -n 2 -e  TGeant3)
+  add_test(NAME tpcsim_G3 COMMAND ${CMAKE_BINARY_DIR}/bin/runTPC -n 2 -e  TGeant3)
   set_tests_properties(tpcsim_G3 PROPERTIES PASS_REGULAR_EXPRESSION "Macro finished succesfully")
   # sets the necessary environment
   set_tests_properties(tpcsim_G3 tpcsim_G4  PROPERTIES ENVIRONMENT VMCWORKDIR=${CMAKE_SOURCE_DIR})

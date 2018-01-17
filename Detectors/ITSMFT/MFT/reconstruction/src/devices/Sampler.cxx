@@ -24,13 +24,6 @@ using namespace o2::MFT;
 using namespace std;
 
 //_____________________________________________________________________________
-// helper function to clean up the object holding the data after it is transported.
-void free_tmessage2(void* /*data*/, void *hint)
-{
-    delete (TMessage*)hint;
-}
-
-//_____________________________________________________________________________
 Sampler::Sampler()
   : FairMQDevice()
   , mOutputChannelName("data-out")
@@ -177,11 +170,11 @@ void Sampler::listenForAcks()
     for (Long64_t eventNr = 0; eventNr < mMaxIndex ; ++eventNr) {
       unique_ptr<FairMQMessage> ack(NewMessage());
       if (Receive(ack,mAckChannelName.data())) {
-	// do not need to do anything
+        // do not need to do anything
       }
 
       if (!CheckCurrentState(RUNNING)) {
-	break;
+        break;
       }
     }
 

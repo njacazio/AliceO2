@@ -107,9 +107,14 @@ class V3Layer : public V11Geometry
       return mPhi0;
     };
 
-    Double_t getZLength() const
+    Double_t getIBModuleZLength() const
     {
-      return mZLength;
+      return mIBModuleZLength;
+    };
+
+    Double_t getOBModuleZLength() const
+    {
+      return mOBModuleZLength;
     };
 
     Int_t getChipType() const
@@ -193,11 +198,6 @@ class V3Layer : public V11Geometry
       mPhi0 = phi;
     }
 
-    void setZLength(Double_t z)
-    {
-      mZLength = z;
-    };
-
     void setChipType(Int_t tp)
     {
       mChipTypeID = tp;
@@ -240,16 +240,10 @@ class V3Layer : public V11Geometry
     /// \param mgr The GeoManager (used only to get the proper material)
     TGeoVolume *createStave(const TGeoManager *mgr = gGeoManager);
 
-    /// Creates the actual Chip
-    /// \param xchip,ychip,zchip The chip half dimensions
-    /// \param mgr The GeoManager (used only to get the proper material)
-    TGeoVolume *createChip(Double_t x, Double_t y, Double_t z, const TGeoManager *mgr = gGeoManager);
-
     /// Creates the IB Module: (only the chips for the time being)
     /// Returns the module as a TGeoVolume
-    /// \param xmod, ymod, zmod X, Y, Z module half lengths
     /// \param mgr The GeoManager (used only to get the proper material)
-    TGeoVolume *createModuleInnerB(Double_t x, Double_t y, Double_t z, const TGeoManager *mgr = gGeoManager);
+    TGeoVolume *createModuleInnerB(const TGeoManager *mgr = gGeoManager);
 
     /// Creates the OB Module: HIC + FPC + Carbon plate
     /// Returns the module as a TGeoVolume
@@ -271,27 +265,26 @@ class V3Layer : public V11Geometry
 
     /// Create the chip stave for the Inner Barrel(Here we fake the halfstave volume to have the
     /// same formal geometry hierarchy as for the Outer Barrel)
-    /// \param xsta, ysta, zsta X, Y, Z stave half lengths
     /// \param mgr The GeoManager (used only to get the proper material)
-    TGeoVolume *createStaveInnerB(Double_t x, Double_t y, Double_t z, const TGeoManager *mgr = gGeoManager);
+    TGeoVolume *createStaveInnerB(const TGeoManager *mgr = gGeoManager);
 
     /// Create the mechanical stave structure
     /// \param xsta X length
     /// \param zsta Z length
     /// \param mgr  The GeoManager (used only to get the proper material)
-    TGeoVolume *createStaveStructInnerB(Double_t x, Double_t z, const TGeoManager *mgr = gGeoManager);
+    TGeoVolume *createStaveStructInnerB(Double_t x, const TGeoManager *mgr = gGeoManager);
 
     /// Create a dummy stave
     /// \param xsta X length
     /// \param zsta Z length
     /// \param mgr The GeoManager (used only to get the proper material)
-    TGeoVolume *createStaveModelInnerBDummy(Double_t x, Double_t z, const TGeoManager *mgr = gGeoManager) const;
+    TGeoVolume *createStaveModelInnerBDummy(Double_t x, const TGeoManager *mgr = gGeoManager) const;
 
     /// Create the mechanical stave structure for Model 4 of TDR
     /// \param xsta X length
     /// \param zsta Z length
     /// \param mgr The GeoManager (used only to get the proper material)
-    TGeoVolume *createStaveModelInnerB4(Double_t x, Double_t z, const TGeoManager *mgr = gGeoManager);
+    TGeoVolume *createStaveModelInnerB4(Double_t x, const TGeoManager *mgr = gGeoManager);
 
     /// Create the Inner Barrel End Stave connectors
     /// \param mgr The GeoManager (used only to get the proper material)
@@ -353,8 +346,8 @@ class V3Layer : public V11Geometry
     /// \param H The stave height
     /// \param top True to create the top corner, False to create the side one
     TGeoXtru *createStaveSide(const char *name,
-			      Double_t dz, Double_t alpha, Double_t beta,
-			      Double_t L, Double_t H, Bool_t top);
+                              Double_t dz, Double_t alpha, Double_t beta,
+                              Double_t L, Double_t H, Bool_t top);
 
     /// Help method to create a TGeoCombiTrans matrix from a similar method with same name and
     /// function in V11GeometrySDD class by L.Gaudichet)
@@ -372,7 +365,6 @@ class V3Layer : public V11Geometry
     Int_t mLayerNumber;        ///< Current layer number
     Double_t mPhi0;            ///< lab phi of 1st stave, in degrees!!!
     Double_t mLayerRadius;     ///< Inner radius of this layer
-    Double_t mZLength;         ///< Z length of this layer
     Double_t mSensorThickness; ///< Sensor thickness
     Double_t mChipThickness;   ///< Chip thickness
     Double_t mStaveWidth;      ///< Stave width (for turbo layers only)
@@ -394,6 +386,10 @@ class V3Layer : public V11Geometry
     Double_t mGammaConvDiam; ///< Gamma Conversion Rod Diameter
     Double_t mGammaConvXPos; ///< Gamma Conversion Rod X Position
 
+    // Dimensions computed during geometry build-up
+    Double_t mIBModuleZLength; ///< IB Module Length along Z
+    Double_t mOBModuleZLength; ///< OB Module Length along Z
+
     // Parameters for the  geometry
 
     // General Parameters
@@ -408,6 +404,7 @@ class V3Layer : public V11Geometry
     static const Int_t sIBNChipRows;   ///< IB chip rows in module
     static const Double_t sIBChipZGap;         ///< Gap between IB chips on Z
 
+    static const Double_t sIBModuleZLength;    ///< IB Module Length along Z
     static const Double_t sIBFPCWiderXPlus;    ///< FPC protrusion at X>0
     static const Double_t sIBFPCWiderXNeg ;    ///< FPC protrusion at X<0
     static const Double_t sIBFlexCableAlThick; ///< Thickness of FPC Aluminum
@@ -490,7 +487,7 @@ class V3Layer : public V11Geometry
     static const Double_t sOBColdPlateThick;    ///< OB Cold Plate Thickness
     static const Double_t sOBGlueThickM1;       ///< OB Glue Thickness (Model1)
     static const Double_t sOBGlueThick;         ///< OB Glue Thickness
-    static const Double_t sOBModuleZLength;     ///< OB Chip Length along Z
+    static const Double_t sOBModuleZLength;     ///< OB Module Length along Z
     static const Double_t sOBHalfStaveYPos;     ///< OB half staves Y position
     static const Double_t sOBHalfStaveYTrans;   ///< OB half staves Y transl.
     static const Double_t sOBHalfStaveXOverlap; ///< OB half staves X overlap

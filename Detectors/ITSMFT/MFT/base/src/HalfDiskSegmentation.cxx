@@ -16,12 +16,14 @@
 
 #include "FairLogger.h"
 
+#include "ITSMFTBase/SegmentationAlpide.h"
 #include "MFTBase/Constants.h"
 #include "MFTBase/HalfDiskSegmentation.h"
 #include "MFTBase/Geometry.h"
 #include "MFTBase/GeometryTGeo.h"
 
 using namespace o2::MFT;
+using namespace o2::ITSMFT;
 
 ClassImp(HalfDiskSegmentation);
 
@@ -142,8 +144,8 @@ void HalfDiskSegmentation::createLadders(TXMLEngine* xml, XMLNodePointer_t node)
                     if(!attrName.CompareTo("psi")) {
                       ang[2] = attrVal.Atof();
                     } else{
-		      LOG(ERROR) << "Unknwon Attribute name " << xml->GetAttrName(attr) << FairLogger::endl;
-		    }      
+                      LOG(ERROR) << "Unknwon Attribute name " << xml->GetAttrName(attr) << FairLogger::endl;
+                    }      
       attr = xml->GetNextAttr(attr);
     }
     
@@ -168,8 +170,8 @@ void HalfDiskSegmentation::createLadders(TXMLEngine* xml, XMLNodePointer_t node)
     // Find the position of the corner of the flex which is the ladder corrdinate system center.
     
     pos[0] = -Geometry::sSensorSideOffset;
-    pos[1] = -Geometry::sSensorTopOffset - Geometry::sSensorHeight;
-    pos[2] = -Geometry::sFlexThickness - Geometry::sSensorThickness;
+    pos[1] = -Geometry::sSensorTopOffset - SegmentationAlpide::SensorSizeRows;
+    pos[2] = -Geometry::sFlexThickness - Geometry::sChipThickness;
     Double_t master[3];
     ladder->getTransformation()->LocalToMaster(pos, master);
     ladder->setPosition(master);

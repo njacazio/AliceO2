@@ -12,6 +12,7 @@
 #define BOOST_TEST_MAIN
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
+#include <iostream>
 #include <iomanip>
 #include "Headers/DataHeader.h"
 
@@ -21,7 +22,7 @@ using system_clock = std::chrono::system_clock;
 using TimeScale = std::chrono::nanoseconds;
 
 namespace o2 {
-  namespace Header {
+  namespace header {
 
     BOOST_AUTO_TEST_CASE(Descriptor_test)
     {
@@ -157,10 +158,10 @@ namespace o2 {
       auto refTime = system_clock::now();
       const int nrolls = 1000000;
       for (auto count = 0; count < nrolls; ++count) {
-	if (a == b) {
-	  ++a.itg[0];
-	  ++b.itg[0];
-	}
+        if (a == b) {
+          ++a.itg[0];
+          ++b.itg[0];
+        }
       }
       auto duration = std::chrono::duration_cast<TimeScale>(std::chrono::system_clock::now() - refTime);
       std::cout << nrolls << " operation(s): " << duration.count() << " ns" << std::endl;

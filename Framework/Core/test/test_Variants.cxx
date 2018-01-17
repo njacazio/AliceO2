@@ -14,7 +14,8 @@
 #include <boost/test/unit_test.hpp>
 #include "Framework/Variant.h"
 #include <stdexcept>
-#include <iostream>
+#include <sstream>
+#include <cstring>
 
 using namespace o2::framework;
 
@@ -23,7 +24,7 @@ bool unknown_type(std::runtime_error const &ex) {
 }
 
 BOOST_AUTO_TEST_CASE(VariantTest) {
-  std::ostringstream ss;
+  std::ostringstream ss{};
   Variant a(10);
   BOOST_CHECK(a.get<int>() == 10);
   ss << a;
@@ -41,9 +42,9 @@ BOOST_AUTO_TEST_CASE(VariantTest) {
   BOOST_CHECK(ss.str() == "1010.110.2foo");
   // Spotted valgrind error while deleting a vector of variants.
   std::vector<Variant> vector{1, 1.2, 1.1f, "foo"};
-  Variant sa{"foo"};
-  Variant sb{sa}; // Copy constructor
-  Variant sc{std::move(sa)}; // Move constructor
+  Variant sa("foo");
+  Variant sb(sa); // Copy constructor
+  Variant sc(std::move(sa)); // Move constructor
   Variant sd = sc; // Copy operator
 
   BOOST_CHECK(std::string(sb.get<const char *>()) == "foo");

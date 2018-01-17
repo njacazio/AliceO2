@@ -16,6 +16,7 @@
 #include <stdexcept>
 #include <iosfwd>
 #include <iostream>
+#include <initializer_list>
 
 namespace o2 {
 namespace framework {
@@ -27,6 +28,7 @@ enum class VariantType : int {
   Double,
   String,
   Bool,
+  Empty,
   Unknown
 };
 
@@ -63,6 +65,34 @@ template <> struct variant_trait<bool> {
   static VariantType type() { return VariantType::Bool; }
 };
 
+template<VariantType type>
+struct variant_type {
+};
+
+template <> struct variant_type<VariantType::Int> {
+  using type = int;
+};
+
+template <> struct variant_type<VariantType::Int64> {
+  using type = int64_t;
+};
+
+template <> struct variant_type<VariantType::Float> {
+  using type = float;
+};
+
+template <> struct variant_type<VariantType::Double> {
+  using type = double;
+};
+
+template <> struct variant_type<VariantType::String> {
+  using type = const char*;
+};
+
+template <> struct variant_type<VariantType::Bool> {
+  using type = bool;
+};
+
 template <typename S, typename T>
 struct variant_helper {
   static void set(S*store, T value)
@@ -95,9 +125,18 @@ struct variant_helper<S, const char *> {
 class Variant {
   using storage_t = std::aligned_union<8, int, int64_t, const char *, float, double, bool>::type;
 public:
+  Variant(VariantType type = VariantType::Unknown) : mType{type} {}
+
   template <typename T> Variant(T value)
   : mType{variant_trait<T>::type()} {
     variant_helper<storage_t, decltype(value)>::set(&mStore, value);
+  }
+
+  template <typename T> Variant(std::initializer_list<T>)
+    : mType{VariantType::Unknown} {
+    static_assert(sizeof(T) == 0,
+		  "brace-enclosed initializer list forbidden for Variant"
+		  "\n did you accidentally put braces around the default value?");
   }
 
   Variant(const Variant &other)
@@ -175,6 +214,8 @@ public:
         break;
       case VariantType::Bool:
         oss << val.get<bool>();
+        break;
+      case VariantType::Empty:
         break;
       default:
         oss << "undefined";

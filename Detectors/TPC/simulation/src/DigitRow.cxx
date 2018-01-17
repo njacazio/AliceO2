@@ -25,13 +25,13 @@ void DigitRow::setDigit(size_t hitID, int pad, float charge)
     mPads[pad]->setDigit(hitID, charge);
   }
   else{
-    mPads[pad] = std::unique_ptr<DigitPad> (new DigitPad(pad));
+    mPads[pad] = std::make_unique<DigitPad> (pad);
     mPads[pad]->setDigit(hitID, charge);
   }
 }
 
 void DigitRow::fillOutputContainer(std::vector<o2::TPC::Digit> *output, o2::dataformats::MCTruthContainer<o2::MCCompLabel> &mcTruth,
-				   std::vector<o2::TPC::DigitMCMetaData> *debug, int cru, int timeBin, int row, float commonMode)
+                                   std::vector<o2::TPC::DigitMCMetaData> *debug, int cru, int timeBin, int row, float commonMode)
 {
   for(auto &aPad : mPads) {
     if(aPad == nullptr) continue;

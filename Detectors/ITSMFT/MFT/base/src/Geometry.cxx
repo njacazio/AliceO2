@@ -29,23 +29,13 @@ using namespace o2::MFT;
 
 ClassImp(o2::MFT::Geometry)
 
-const Double_t Geometry::sSensorLength=3.; //[cm]
-const Double_t Geometry::sSensorHeight=1.5; //[cm]
-const Double_t Geometry::sXPixelPitch=29.250e-4; // 29.15 micron // TODO : Check that
-const Double_t Geometry::sYPixelPitch=26.880e-4; // 26.88 micron // TODO : Check that
-const Double_t Geometry::sSensorMargin=29.120e-4; // 29.12 micron // TODO : Check that
-
-const Double_t Geometry::sSensorActiveWidth  = sNPixelX * sXPixelPitch; //[cm]
-const Double_t Geometry::sSensorActiveHeight = sNPixelY * sYPixelPitch; //[cm]
 
 const Double_t Geometry::sSensorInterspace = 0.01; //[cm]  Offset between two adjacent chip on a ladder
 const Double_t Geometry::sSensorSideOffset = 0.04; // [cm] Side Offset between the ladder edge and the chip edge
 const Double_t Geometry::sSensorTopOffset = 0.04; // [cm] Top Offset between the ladder edge and the chip edge
 const Double_t Geometry::sLadderOffsetToEnd = 4.7; // [cm] Offset between the last Chip and the end of the ladder toward the DAQ connector
-const Double_t Geometry::sSensorThickness = 50.e-4; // 50 microns
-
-const Double_t Geometry::sHeightActive = 1.3;
-const Double_t Geometry::sHeightReadout = 0.2;
+const Double_t Geometry::sSensorThickness = 30.e-4; // 50 microns
+const Double_t Geometry::sChipThickness = 50.e-4; // 50 microns
 
 // Allmost everything you wanted to know about the FPC
 const Double_t Geometry::sLineWidth= 100.e-4;         // line width, 100 microns
@@ -74,6 +64,27 @@ const Double_t Geometry::sRohacell=-0.001; // to modify the thickness of the roh
 
 const Double_t Geometry::sGlueThickness=100.e-4; // 100 microns of SE4445 to be confirmed
 const Double_t Geometry::sGlueEdge=300.e-4; // in case the glue is not spreaded on the whole surface of the sensor
+
+// need to do this, because of the different conventions between 
+// ITS and MFT in placing the chips (rows, cols) in the geometry 
+// at construction time
+//
+// xITS    0  +1   0   xMFT
+// yITS =  0   0  +1 * yMFT
+// zITS   +1   0   0   zMFT
+//
+
+TGeoHMatrix Geometry::sTransMFT2ITS = [] {
+  TGeoHMatrix tmp;
+  Double_t rot[9] = { 0., 1., 0., 
+                      0., 0., 1., 
+                      1., 0., 0.};
+  tmp.SetRotation(rot);
+  // equivalent to
+  //tmp.RotateY(-90.);
+  //tmp.RotateZ(-90.);
+  return tmp;
+}();
 
 Geometry* Geometry::sInstance = nullptr;
 

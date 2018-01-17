@@ -10,6 +10,7 @@
 #ifndef FRAMEWORK_INPUTSPEC_H
 #define FRAMEWORK_INPUTSPEC_H
 
+#include <string>
 #include "Headers/DataHeader.h"
 
 namespace o2 {
@@ -27,9 +28,10 @@ struct InputSpec {
     Transient
   };
 
-  Header::DataOrigin origin;
-  Header::DataDescription description;
-  Header::DataHeader::SubSpecificationType subSpec;
+  std::string binding;
+  header::DataOrigin origin;
+  header::DataDescription description;
+  header::DataHeader::SubSpecificationType subSpec;
   enum Lifetime lifetime;
 };
 
