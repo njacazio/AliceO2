@@ -20,7 +20,7 @@ cmake_policy(SET ${p} NEW)
 endif()
 endforeach()
 
-
+set(CMAKE_CXX_FLAGS -ftemplate-backtrace-limit=0)
 
 # Set name of our project to "ALICEO2". Has to be done
 # after check of cmake version since this is a new feature
