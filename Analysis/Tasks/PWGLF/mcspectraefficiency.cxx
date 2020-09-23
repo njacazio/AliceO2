@@ -28,9 +28,9 @@ using namespace MC;
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
   std::vector<ConfigParamSpec> options{
-     {"add-vertex", VariantType::Bool, false, {"Vertex plots"}},
-     {"add-gen", VariantType::Bool, false, {"Generated plots"}},
-     {"add-reco", VariantType::Bool, false, {"Reconstructed plots"}}};
+    {"add-vertex", VariantType::Bool, false, {"Vertex plots"}},
+    {"add-gen", VariantType::Bool, false, {"Generated plots"}},
+    {"add-reco", VariantType::Bool, false, {"Reconstructed plots"}}};
   std::swap(workflowOptions, options);
 }
 
