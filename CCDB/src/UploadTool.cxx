@@ -26,7 +26,7 @@ bool initOptionsAndParse(bpo::options_description& options, int argc, char* argv
     "host", bpo::value<std::string>()->default_value("ccdb-test.cern.ch:8080"), "CCDB server")(
     "path,p", bpo::value<std::string>()->required(), "CCDB path")(
     "file,f", bpo::value<std::string>()->required(), "ROOT file")(
-    "key,k", bpo::value<std::string>()->required(), "Key of object to upload")(
+    "key,k", bpo::value<std::string>()->required(), "Key of object to upload. To upload the full file the key should coincide with the filename")(
     "meta,m", bpo::value<std::string>()->default_value(""), "List of key=value pairs for meta-information (k1=v1;k2=v2;k3=v3)")(
     "starttimestamp,st", bpo::value<long>()->default_value(-1), "timestamp - default -1 = now")(
     "endtimestamp,et", bpo::value<long>()->default_value(-1), "end of validity - default -1 = 1 year from now")(
@@ -142,6 +142,20 @@ int main(int argc, char* argv[])
   std::map<std::string, std::string> meta;
   for (auto& p : keyvalues) {
     meta[p.first] = p.second;
+  }
+
+  if (keyname == filename) { // Request to store the full file on the CCDB
+
+    TFile* fstore = TFile::Open(filename.c_str(), "READ");
+    if (!fstore->IsOpen()) {
+      std::cerr << "TFile " << filename << " does not exist\n";
+      return 1;
+    }
+    std::cout << " Uploading full file" << filename
+              << " to path " << path << " with timestamp validy from " << starttimestamp
+              << " to " << endtimestamp << "\n";
+    api.storeAsTFile(fstore, path, meta, starttimestamp, endtimestamp);
+    return 0;
   }
 
   TFile f(filename.c_str());
