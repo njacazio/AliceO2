@@ -146,15 +146,21 @@ int main(int argc, char* argv[])
 
   if (keyname == filename) { // Request to store the full file on the CCDB
 
-    TFile* fstore = TFile::Open(filename.c_str(), "READ");
-    if (!fstore->IsOpen()) {
+    TFile fstore(filename.c_str(), "READ");
+    if (!fstore.IsOpen()) {
       std::cerr << "TFile " << filename << " does not exist\n";
       return 1;
     }
     std::cout << " Uploading full file" << filename
               << " to path " << path << " with timestamp validy from " << starttimestamp
               << " to " << endtimestamp << "\n";
+TList *lkeys = fstore.GetListOfKeys();
+TList lstore;
+for (int i = 0; lkeys->GetEntries(); i++){
+  lstore->Add
+}
     api.storeAsTFile(fstore, path, meta, starttimestamp, endtimestamp);
+    fstore.Close();
     return 0;
   }
 
