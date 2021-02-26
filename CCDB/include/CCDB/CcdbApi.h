@@ -84,6 +84,7 @@ class CcdbApi //: public DatabaseInterface
    * @param info: optinal info where assigned object name and filename will be filled
    */
   static std::unique_ptr<std::vector<char>> createObjectImage(const TObject* obj, CcdbObjectInfo* info = nullptr);
+  static std::unique_ptr<std::vector<char>> createObjectImageWithName(const TObject* obj, CcdbObjectInfo* info, const char* name);
 
   /**
    * Create a binary image of the object, if CcdbObjectInfo pointer is provided, register there 

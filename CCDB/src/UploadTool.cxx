@@ -154,12 +154,32 @@ int main(int argc, char* argv[])
     std::cout << " Uploading full file" << filename
               << " to path " << path << " with timestamp validy from " << starttimestamp
               << " to " << endtimestamp << "\n";
-TList *lkeys = fstore.GetListOfKeys();
-TList lstore;
-for (int i = 0; lkeys->GetEntries(); i++){
-  lstore->Add
-}
-    api.storeAsTFile(fstore, path, meta, starttimestamp, endtimestamp);
+    TList* lkeys = fstore.GetListOfKeys();
+    lkeys->ls();
+    TList* lstore = new TList();
+    lstore->SetOwner();
+    for (int i = 0; i < lkeys->GetEntries(); i++) {
+      Printf("%i", i);
+      TString name = lkeys->At(i)->GetName();
+      Printf("Adding object %s", name.Data());
+      TObject* obj = fstore.Get(name);
+      lstore->Add(obj);
+    }
+
+    o2::ccdb::CcdbObjectInfo info;
+    auto img1 = api.createObjectImageWithName(lstore->At(0), &info, "obj1");
+    auto img2 = api.createObjectImageWithName(lstore->At(1), &info, "obj2");
+    auto size = std::max(img1->size(), img2->size());
+    img1->resize(size);
+    img2->resize(size);
+
+    // auto imgsum = std::unique_ptr<std::vector<char>>(size);
+    auto imgsum = std::vector<char>(size);
+    std::transform(img1->begin(), img1->end(), img2->begin(), imgsum.begin(), std::plus<int>());
+
+    api.storeAsBinaryFile(imgsum.data(), imgsum.size(), info.getFileName(), info.getObjectType(), path, meta, starttimestamp, endtimestamp);
+    // api.storeAsTFile(lstore, path, meta, starttimestamp, endtimestamp);
+    // api.storeAsTFile(fstore, path, meta, starttimestamp, endtimestamp);
     fstore.Close();
     return 0;
   }

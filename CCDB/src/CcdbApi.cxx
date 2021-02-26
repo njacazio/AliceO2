@@ -121,6 +121,20 @@ std::unique_ptr<std::vector<char>> CcdbApi::createObjectImage(const TObject* roo
   return o2::utils::MemFileHelper::createFileImage(*rootObject, tmpFileName, CCDBOBJECT_ENTRY);
 }
 
+std::unique_ptr<std::vector<char>> CcdbApi::createObjectImageWithName(const TObject* rootObject, CcdbObjectInfo* info, const char*name)
+{
+  // Create a binary image of the object, if CcdbObjectInfo pointer is provided, register there
+  // the assigned object class name and the filename
+  std::string className = rootObject->GetName();
+  std::string tmpFileName = generateFileName(className);
+  if (info) {
+    info->setFileName(tmpFileName);
+    info->setObjectType("TObject"); // why TObject and not the actual name?
+  }
+  std::lock_guard<std::mutex> guard(gIOMutex);
+  return o2::utils::MemFileHelper::createFileImage(*rootObject, tmpFileName, name);
+}
+
 void CcdbApi::storeAsTFile_impl(const void* obj, std::type_info const& tinfo, std::string const& path,
                                 std::map<std::string, std::string> const& metadata,
                                 long startValidityTimestamp, long endValidityTimestamp) const
