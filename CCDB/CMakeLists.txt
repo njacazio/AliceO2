@@ -62,3 +62,9 @@ o2_add_test(BasicCCDBManager
             COMPONENT_NAME ccdb
             PUBLIC_LINK_LIBRARIES O2::CCDB
             LABELS ccdb)
+
+o2_add_test(CCDBFileFetch
+            SOURCES test/testCCDBFileFetch.cxx
+            COMPONENT_NAME ccdb
+            PUBLIC_LINK_LIBRARIES O2::CCDB
+            LABELS ccdb)
