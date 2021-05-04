@@ -21,6 +21,7 @@
 // O2 includes
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
+#include "ReconstructionDataFormats/PID.h"
 
 namespace o2::aod
 {
@@ -280,6 +281,36 @@ DECLARE_SOA_TABLE(pidTPCAl, "AOD", "pidTPCAl", //! Table of the TPC response wit
                   pidtpc_tiny::TPCNSigmaStoreAl, pidtpc_tiny::TPCNSigmaAl<pidtpc_tiny::TPCNSigmaStoreAl>);
 
 #undef DEFINE_UNWRAP_NSIGMA_COLUMN
+
+namespace pidbayes
+{
+// Bayes probability
+DECLARE_SOA_COLUMN(BayesEl, bayesEl, float);                        //! Bayesian probability of having a Electron
+DECLARE_SOA_COLUMN(BayesMu, bayesMu, float);                        //! Bayesian probability of having a Muon
+DECLARE_SOA_COLUMN(BayesPi, bayesPi, float);                        //! Bayesian probability of having a Pion
+DECLARE_SOA_COLUMN(BayesKa, bayesKa, float);                        //! Bayesian probability of having a Kaon
+DECLARE_SOA_COLUMN(BayesPr, bayesPr, float);                        //! Bayesian probability of having a Proton
+DECLARE_SOA_COLUMN(BayesDe, bayesDe, float);                        //! Bayesian probability of having a Deuteron
+DECLARE_SOA_COLUMN(BayesTr, bayesTr, float);                        //! Bayesian probability of having a Triton
+DECLARE_SOA_COLUMN(BayesHe, bayesHe, float);                        //! Bayesian probability of having a Helium3
+DECLARE_SOA_COLUMN(BayesAl, bayesAl, float);                        //! Bayesian probability of having a Alpha
+DECLARE_SOA_COLUMN(BayesProb, bayesProb, float);                    //! Bayesian probability of the most probable ID
+DECLARE_SOA_COLUMN(BayesID, bayesID, o2::track::pid_constants::ID); //! Most probable ID
+} // namespace pidbayes
+
+// Per particle tables
+DECLARE_SOA_TABLE(pidBayesEl, "AOD", "pidBayesEl", pidbayes::BayesEl); //! Bayesian probability of having a Electron
+DECLARE_SOA_TABLE(pidBayesMu, "AOD", "pidBayesMu", pidbayes::BayesMu); //! Bayesian probability of having a Muon
+DECLARE_SOA_TABLE(pidBayesPi, "AOD", "pidBayesPi", pidbayes::BayesPi); //! Bayesian probability of having a Pion
+DECLARE_SOA_TABLE(pidBayesKa, "AOD", "pidBayesKa", pidbayes::BayesKa); //! Bayesian probability of having a Kaon
+DECLARE_SOA_TABLE(pidBayesPr, "AOD", "pidBayesPr", pidbayes::BayesPr); //! Bayesian probability of having a Proton
+DECLARE_SOA_TABLE(pidBayesDe, "AOD", "pidBayesDe", pidbayes::BayesDe); //! Bayesian probability of having a Deuteron
+DECLARE_SOA_TABLE(pidBayesTr, "AOD", "pidBayesTr", pidbayes::BayesTr); //! Bayesian probability of having a Triton
+DECLARE_SOA_TABLE(pidBayesHe, "AOD", "pidBayesHe", pidbayes::BayesHe); //! Bayesian probability of having a Helium3
+DECLARE_SOA_TABLE(pidBayesAl, "AOD", "pidBayesAl", pidbayes::BayesAl); //! Bayesian probability of having a Alpha
+
+// Table for the most probable particle
+DECLARE_SOA_TABLE(pidBayes, "AOD", "pidBayes", pidbayes::BayesProb, pidbayes::BayesID); //! Index of the most probable ID and its bayesian probability
 
 } // namespace o2::aod
 
