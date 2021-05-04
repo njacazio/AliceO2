@@ -98,6 +98,65 @@ class Parameters : public TNamed
   ClassDef(Parameters, 1); // Container for parameter of parametrizations
 };
 
+/// \brief Class to handle the parameters of a given detector response
+template <std::size_t paramSize>
+class Parameters2 : public TObject
+{
+ public:
+  /// Default constructor
+  Parameters2() = default;
+
+  /// Parametric constructor
+  /// \param params Parameters2 to initialize the container
+  Parameters2(const std::array<pidvar_t, paramSize> params) : mPar{params} {};
+
+  /// Default destructor
+  ~Parameters2() override = default;
+
+  /// Setter for the parameter at position iparam
+  /// \param iparam index in the array of the parameters
+  /// \param value value of the parameter at position iparam
+  void SetParameter(const unsigned int iparam, const pidvar_t value) { mPar[iparam] = value; }
+
+  /// Setter for the parameter, using an array
+  /// \param param array with parameters
+  void SetParameters(const pidvar_t* params) { std::copy(params, params + mPar.size(), mPar.begin()); }
+
+  /// Setter for the parameter, using a vector
+  /// \param params array with parameters
+  void SetParameters(const std::array<pidvar_t, paramSize> params) { mPar = params; };
+
+  /// Setter for the parameter, using a parameter object
+  /// \param params parameter object with parameters
+  void SetParameters(const Parameters2 params) { SetParameters(params.mPar); };
+
+  /// Setter for the parameter, using a parameter pointer
+  /// \param params pointer to parameter object with parameters
+  void SetParameters(const Parameters2* params) { SetParameters(params->mPar); };
+
+  /// Printer of the parameter values
+  virtual void Print(Option_t* option = "") const override;
+
+  /// Getter for the parameters
+  /// \return returns an array of parameters
+  const pidvar_t* GetParameters() const { return mPar.data(); }
+
+  /// Getter for the size of the parameter
+  /// \return returns the size of the parameter array
+  unsigned int size() const { return mPar.size(); }
+
+  /// Getter of the parameter at position i
+  /// \param i index of the parameter to get
+  /// \return returns the parameter value at position i
+  pidvar_t operator[](const unsigned int i) const { return mPar[i]; }
+
+ private:
+  /// Vector of the parameter
+  std::array<pidvar_t, paramSize> mPar;
+
+  ClassDef(Parameters2, 1); // Container for parameter of parametrizations
+};
+
 /// \brief Class to handle the parameters and the parametrization of a given detector response
 class Parametrization : public TNamed
 {
@@ -154,6 +213,57 @@ class Parametrization : public TNamed
   Parameters mParameters;
 
   ClassDef(Parametrization, 1); // Container for the parametrization of the response function
+};
+
+/// \brief Class to handle the parameters and the parametrization of a given detector response
+template <std::size_t paramSize, typename CollisionType, typename TrackType, void (*Implementation)(const CollisionType&, const TrackType&, const Parameters2<paramSize>&)>
+class Parametrization2 : public TNamed
+{
+ public:
+  /// Default constructor
+  Parametrization2() : TNamed("DefaultParametrization", "DefaultParametrization"), mParameters{0} {};
+
+  /// Parametric constructor
+  /// \param name Name (and title) of the parametrization
+  /// \param size Number of parameters of the parametrization
+  Parametrization2(TString name) : TNamed(name, name), mParameters{0} {};
+
+  /// Parametric constructor
+  /// \param name Name (and title) of the parametrization
+  /// \param params Parameters of the parametrization
+  Parametrization2(TString name, const std::vector<pidvar_t> params) : TNamed(name, name), mParameters{params} {};
+
+  /// Default destructor
+  ~Parametrization2() override = default;
+
+  /// Getter for parametrization values, to be reimplemented in the custom parametrization of the user
+  /// \param x array of variables to use in order to compute the return value
+  pidvar_t operator()(const CollisionType& collision, const TrackType& track) const { return Implementation(collision, track, mParameters); };
+
+  /// Printer for parameters
+  virtual void Print(Option_t* option = "") const override;
+
+  /// Setter for the parameter at position iparam
+  /// \param iparam index in the array of the parameters
+  /// \param value value of the parameter at position iparam
+  void SetParameter(const unsigned int iparam, const pidvar_t value) { mParameters.SetParameter(iparam, value); }
+
+  /// Setter for the parameter, using a vector, a parameter object or a pointer to a parameter object
+  /// \param params vector, parameter object, pointer to parameter object with parameters
+  template <typename T>
+  void SetParameters(const T params)
+  {
+    mParameters.SetParameters(params);
+  }
+
+  /// Getter for the parameters
+  Parameters2<paramSize> GetParameters() const { return mParameters; }
+
+ protected:
+  /// Parameters2 of the parametrization
+  Parameters2<paramSize> mParameters;
+
+  ClassDef(Parametrization2, 1); // Container for the parametrization of the response function
 };
 
 } // namespace o2::pid
