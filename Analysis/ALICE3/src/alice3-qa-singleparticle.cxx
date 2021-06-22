@@ -71,7 +71,7 @@ struct Alice3SingleParticle {
       if (mcParticle.pdgCode() != PDG) {
         continue;
       }
-      if(mcParticle.y() < yMin || mcParticle.y() > yMax) {
+      if (mcParticle.y() < yMin || mcParticle.y() > yMax) {
         continue;
       }
       histos.fill(HIST("particlePt"), mcParticle.pt());
@@ -85,7 +85,7 @@ struct Alice3SingleParticle {
       histos.fill(HIST("prodVyVsPt"), mcParticle.pt(), mcParticle.vy());
       histos.fill(HIST("prodVzVsPt"), mcParticle.pt(), mcParticle.vz());
       histos.fill(HIST("prodRadiusVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()));
-      histos.fill(HIST("prodRadius3DVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy() + mcParticle.vz() * mcParticle.vz() ));
+      histos.fill(HIST("prodRadius3DVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy() + mcParticle.vz() * mcParticle.vz()));
       ParticlesOfInterest.push_back(mcParticle.globalIndex());
     }
 
