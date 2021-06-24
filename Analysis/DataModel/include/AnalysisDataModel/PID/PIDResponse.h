@@ -25,6 +25,22 @@
 
 namespace o2::aod
 {
+namespace pidutils
+{
+template <typename T, const T underflow, const T overflow, const float lowest, const float highest, const float width, typename tableType>
+void packInTable(const float& separation, tableType& table)
+{
+  if (separation <= lowest) {
+    table(underflow);
+  } else if (separation >= highest) {
+    table(overflow);
+  } else if (separation >= 0) {
+    table(separation / width + 0.5f);
+  } else {
+    table(separation / width - 0.5f);
+  }
+}
+} // namespace pidutils
 
 namespace pidtofbeta
 {
@@ -34,8 +50,8 @@ DECLARE_SOA_COLUMN(BetaError, betaerror, float); //! Uncertainty on the TOF beta
 DECLARE_SOA_COLUMN(ExpBetaEl, expbetael, float);           //! Expected beta of electron
 DECLARE_SOA_COLUMN(ExpBetaElError, expbetaelerror, float); //! Expected uncertainty on the beta of electron
 //
-DECLARE_SOA_COLUMN(SeparationBetaEl, separationbetael, float); //!
-DECLARE_SOA_DYNAMIC_COLUMN(DiffBetaEl, diffbetael,             //!
+DECLARE_SOA_COLUMN(SeparationBetaEl, separationbetael, float); //! Separation computed with the expected beta for electrons
+DECLARE_SOA_DYNAMIC_COLUMN(DiffBetaEl, diffbetael,             //! Difference between the measured and the expected beta for electrons
                            [](float beta, float expbetael) -> float { return beta - expbetael; });
 } // namespace pidtofbeta
 
@@ -61,25 +77,25 @@ DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDiffHe, tofExpSignalDiffHe, //! Differenc
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalDiffAl, tofExpSignalDiffAl, //! Difference between signal and expected for alpha
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
 // Expected sigma
-DECLARE_SOA_COLUMN(TOFExpSigmaEl, tofExpSigmaEl, float); //!
-DECLARE_SOA_COLUMN(TOFExpSigmaMu, tofExpSigmaMu, float); //!
-DECLARE_SOA_COLUMN(TOFExpSigmaPi, tofExpSigmaPi, float); //!
-DECLARE_SOA_COLUMN(TOFExpSigmaKa, tofExpSigmaKa, float); //!
-DECLARE_SOA_COLUMN(TOFExpSigmaPr, tofExpSigmaPr, float); //!
-DECLARE_SOA_COLUMN(TOFExpSigmaDe, tofExpSigmaDe, float); //!
-DECLARE_SOA_COLUMN(TOFExpSigmaTr, tofExpSigmaTr, float); //!
-DECLARE_SOA_COLUMN(TOFExpSigmaHe, tofExpSigmaHe, float); //!
-DECLARE_SOA_COLUMN(TOFExpSigmaAl, tofExpSigmaAl, float); //!
+DECLARE_SOA_COLUMN(TOFExpSigmaEl, tofExpSigmaEl, float); //! Expected resolution with the TOF detector for electron
+DECLARE_SOA_COLUMN(TOFExpSigmaMu, tofExpSigmaMu, float); //! Expected resolution with the TOF detector for muon
+DECLARE_SOA_COLUMN(TOFExpSigmaPi, tofExpSigmaPi, float); //! Expected resolution with the TOF detector for pion
+DECLARE_SOA_COLUMN(TOFExpSigmaKa, tofExpSigmaKa, float); //! Expected resolution with the TOF detector for kaon
+DECLARE_SOA_COLUMN(TOFExpSigmaPr, tofExpSigmaPr, float); //! Expected resolution with the TOF detector for proton
+DECLARE_SOA_COLUMN(TOFExpSigmaDe, tofExpSigmaDe, float); //! Expected resolution with the TOF detector for deuteron
+DECLARE_SOA_COLUMN(TOFExpSigmaTr, tofExpSigmaTr, float); //! Expected resolution with the TOF detector for triton
+DECLARE_SOA_COLUMN(TOFExpSigmaHe, tofExpSigmaHe, float); //! Expected resolution with the TOF detector for helium3
+DECLARE_SOA_COLUMN(TOFExpSigmaAl, tofExpSigmaAl, float); //! Expected resolution with the TOF detector for alpha
 // NSigma
-DECLARE_SOA_COLUMN(TOFNSigmaEl, tofNSigmaEl, float); //!
-DECLARE_SOA_COLUMN(TOFNSigmaMu, tofNSigmaMu, float); //!
-DECLARE_SOA_COLUMN(TOFNSigmaPi, tofNSigmaPi, float); //!
-DECLARE_SOA_COLUMN(TOFNSigmaKa, tofNSigmaKa, float); //!
-DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float); //!
-DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //!
-DECLARE_SOA_COLUMN(TOFNSigmaTr, tofNSigmaTr, float); //!
-DECLARE_SOA_COLUMN(TOFNSigmaHe, tofNSigmaHe, float); //!
-DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float); //!
+DECLARE_SOA_COLUMN(TOFNSigmaEl, tofNSigmaEl, float); //! Nsigma separation with the TOF detector for electron
+DECLARE_SOA_COLUMN(TOFNSigmaMu, tofNSigmaMu, float); //! Nsigma separation with the TOF detector for muon
+DECLARE_SOA_COLUMN(TOFNSigmaPi, tofNSigmaPi, float); //! Nsigma separation with the TOF detector for pion
+DECLARE_SOA_COLUMN(TOFNSigmaKa, tofNSigmaKa, float); //! Nsigma separation with the TOF detector for kaon
+DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float); //! Nsigma separation with the TOF detector for proton
+DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with the TOF detector for deuteron
+DECLARE_SOA_COLUMN(TOFNSigmaTr, tofNSigmaTr, float); //! Nsigma separation with the TOF detector for triton
+DECLARE_SOA_COLUMN(TOFNSigmaHe, tofNSigmaHe, float); //! Nsigma separation with the TOF detector for helium3
+DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float); //! Nsigma separation with the TOF detector for alpha
 } // namespace pidtof
 
 // Macro to convert the stored Nsigmas to floats
@@ -97,25 +113,25 @@ constexpr float binned_max = 6.35;
 constexpr float binned_min = -6.35;
 constexpr float bin_width = (binned_max - binned_min) / nbins;
 // NSigma with reduced size 8 bit
-DECLARE_SOA_COLUMN(TOFNSigmaStoreEl, tofNSigmaStoreEl, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TOFNSigmaStoreMu, tofNSigmaStoreMu, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TOFNSigmaStorePi, tofNSigmaStorePi, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TOFNSigmaStoreKa, tofNSigmaStoreKa, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TOFNSigmaStorePr, tofNSigmaStorePr, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TOFNSigmaStoreDe, tofNSigmaStoreDe, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TOFNSigmaStoreTr, tofNSigmaStoreTr, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TOFNSigmaStoreHe, tofNSigmaStoreHe, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TOFNSigmaStoreAl, tofNSigmaStoreAl, binned_nsigma_t); //!
+DECLARE_SOA_COLUMN(TOFNSigmaStoreEl, tofNSigmaStoreEl, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for electron
+DECLARE_SOA_COLUMN(TOFNSigmaStoreMu, tofNSigmaStoreMu, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for muon
+DECLARE_SOA_COLUMN(TOFNSigmaStorePi, tofNSigmaStorePi, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for pion
+DECLARE_SOA_COLUMN(TOFNSigmaStoreKa, tofNSigmaStoreKa, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for kaon
+DECLARE_SOA_COLUMN(TOFNSigmaStorePr, tofNSigmaStorePr, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for proton
+DECLARE_SOA_COLUMN(TOFNSigmaStoreDe, tofNSigmaStoreDe, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for deuteron
+DECLARE_SOA_COLUMN(TOFNSigmaStoreTr, tofNSigmaStoreTr, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for triton
+DECLARE_SOA_COLUMN(TOFNSigmaStoreHe, tofNSigmaStoreHe, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for helium3
+DECLARE_SOA_COLUMN(TOFNSigmaStoreAl, tofNSigmaStoreAl, binned_nsigma_t); //! Stored binned nsigma with the TOF detector for alpha
 // NSigma with reduced size in [binned_min, binned_max] bin size bin_width
-DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaEl, tofNSigmaEl); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaMu, tofNSigmaMu); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaPi, tofNSigmaPi); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaKa, tofNSigmaKa); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaPr, tofNSigmaPr); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaDe, tofNSigmaDe); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaTr, tofNSigmaTr); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaHe, tofNSigmaHe); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //!
+DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaEl, tofNSigmaEl); //! Unwrapped (float) nsigma with the TOF detector for electron
+DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaMu, tofNSigmaMu); //! Unwrapped (float) nsigma with the TOF detector for muon
+DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaPi, tofNSigmaPi); //! Unwrapped (float) nsigma with the TOF detector for pion
+DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaKa, tofNSigmaKa); //! Unwrapped (float) nsigma with the TOF detector for kaon
+DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaPr, tofNSigmaPr); //! Unwrapped (float) nsigma with the TOF detector for proton
+DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaDe, tofNSigmaDe); //! Unwrapped (float) nsigma with the TOF detector for deuteron
+DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaTr, tofNSigmaTr); //! Unwrapped (float) nsigma with the TOF detector for triton
+DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaHe, tofNSigmaHe); //! Unwrapped (float) nsigma with the TOF detector for helium3
+DEFINE_UNWRAP_NSIGMA_COLUMN(TOFNSigmaAl, tofNSigmaAl); //! Unwrapped (float) nsigma with the TOF detector for alpha
 
 } // namespace pidtof_tiny
 
@@ -168,44 +184,44 @@ DECLARE_SOA_TABLE(pidTOFAl, "AOD", "pidTOFAl", //! Table of the TOF response wit
 namespace pidtpc
 {
 // Expected signals
-DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffEl, tpcExpSignalDiffEl, //!
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffEl, tpcExpSignalDiffEl, //! Difference between signal and expected for electron
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffMu, tpcExpSignalDiffMu, //!
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffMu, tpcExpSignalDiffMu, //! Difference between signal and expected for muon
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffPi, tpcExpSignalDiffPi, //!
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffPi, tpcExpSignalDiffPi, //! Difference between signal and expected for pion
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffKa, tpcExpSignalDiffKa, //!
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffKa, tpcExpSignalDiffKa, //! Difference between signal and expected for kaon
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, //!
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, //! Difference between signal and expected for proton
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffDe, tpcExpSignalDiffDe, //!
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffDe, tpcExpSignalDiffDe, //! Difference between signal and expected for deuteron
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffTr, tpcExpSignalDiffTr, //!
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffTr, tpcExpSignalDiffTr, //! Difference between signal and expected for triton
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffHe, tpcExpSignalDiffHe, //!
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffHe, tpcExpSignalDiffHe, //! Difference between signal and expected for helium3
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffAl, tpcExpSignalDiffAl, //!
+DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffAl, tpcExpSignalDiffAl, //! Difference between signal and expected for alpha
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
 // Expected sigma
-DECLARE_SOA_COLUMN(TPCExpSigmaEl, tpcExpSigmaEl, float); //!
-DECLARE_SOA_COLUMN(TPCExpSigmaMu, tpcExpSigmaMu, float); //!
-DECLARE_SOA_COLUMN(TPCExpSigmaPi, tpcExpSigmaPi, float); //!
-DECLARE_SOA_COLUMN(TPCExpSigmaKa, tpcExpSigmaKa, float); //!
-DECLARE_SOA_COLUMN(TPCExpSigmaPr, tpcExpSigmaPr, float); //!
-DECLARE_SOA_COLUMN(TPCExpSigmaDe, tpcExpSigmaDe, float); //!
-DECLARE_SOA_COLUMN(TPCExpSigmaTr, tpcExpSigmaTr, float); //!
-DECLARE_SOA_COLUMN(TPCExpSigmaHe, tpcExpSigmaHe, float); //!
-DECLARE_SOA_COLUMN(TPCExpSigmaAl, tpcExpSigmaAl, float); //!
+DECLARE_SOA_COLUMN(TPCExpSigmaEl, tpcExpSigmaEl, float); //! Expected resolution with the TPC detector for electron
+DECLARE_SOA_COLUMN(TPCExpSigmaMu, tpcExpSigmaMu, float); //! Expected resolution with the TPC detector for muon
+DECLARE_SOA_COLUMN(TPCExpSigmaPi, tpcExpSigmaPi, float); //! Expected resolution with the TPC detector for pion
+DECLARE_SOA_COLUMN(TPCExpSigmaKa, tpcExpSigmaKa, float); //! Expected resolution with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TPCExpSigmaPr, tpcExpSigmaPr, float); //! Expected resolution with the TPC detector for proton
+DECLARE_SOA_COLUMN(TPCExpSigmaDe, tpcExpSigmaDe, float); //! Expected resolution with the TPC detector for deuteron
+DECLARE_SOA_COLUMN(TPCExpSigmaTr, tpcExpSigmaTr, float); //! Expected resolution with the TPC detector for triton
+DECLARE_SOA_COLUMN(TPCExpSigmaHe, tpcExpSigmaHe, float); //! Expected resolution with the TPC detector for helium3
+DECLARE_SOA_COLUMN(TPCExpSigmaAl, tpcExpSigmaAl, float); //! Expected resolution with the TPC detector for alpha
 // NSigma
-DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //!
-DECLARE_SOA_COLUMN(TPCNSigmaMu, tpcNSigmaMu, float); //!
-DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //!
-DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //!
-DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //!
-DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float); //!
-DECLARE_SOA_COLUMN(TPCNSigmaTr, tpcNSigmaTr, float); //!
-DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //!
-DECLARE_SOA_COLUMN(TPCNSigmaAl, tpcNSigmaAl, float); //!
+DECLARE_SOA_COLUMN(TPCNSigmaEl, tpcNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
+DECLARE_SOA_COLUMN(TPCNSigmaMu, tpcNSigmaMu, float); //! Nsigma separation with the TPC detector for muon
+DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
+DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //! Nsigma separation with the TPC detector for proton
+DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float); //! Nsigma separation with the TPC detector for deuteron
+DECLARE_SOA_COLUMN(TPCNSigmaTr, tpcNSigmaTr, float); //! Nsigma separation with the TPC detector for triton
+DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //! Nsigma separation with the TPC detector for helium3
+DECLARE_SOA_COLUMN(TPCNSigmaAl, tpcNSigmaAl, float); //! Nsigma separation with the TPC detector for alpha
 } // namespace pidtpc
 
 namespace pidtpc_tiny
@@ -218,25 +234,25 @@ constexpr float binned_max = 6.35;
 constexpr float binned_min = -6.35;
 constexpr float bin_width = (binned_max - binned_min) / nbins;
 // NSigma with reduced size
-DECLARE_SOA_COLUMN(TPCNSigmaStoreEl, tpcNSigmaStoreEl, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TPCNSigmaStoreMu, tpcNSigmaStoreMu, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TPCNSigmaStorePi, tpcNSigmaStorePi, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TPCNSigmaStoreKa, tpcNSigmaStoreKa, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TPCNSigmaStorePr, tpcNSigmaStorePr, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TPCNSigmaStoreDe, tpcNSigmaStoreDe, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TPCNSigmaStoreTr, tpcNSigmaStoreTr, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TPCNSigmaStoreHe, tpcNSigmaStoreHe, binned_nsigma_t); //!
-DECLARE_SOA_COLUMN(TPCNSigmaStoreAl, tpcNSigmaStoreAl, binned_nsigma_t); //!
+DECLARE_SOA_COLUMN(TPCNSigmaStoreEl, tpcNSigmaStoreEl, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for electron
+DECLARE_SOA_COLUMN(TPCNSigmaStoreMu, tpcNSigmaStoreMu, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for muon
+DECLARE_SOA_COLUMN(TPCNSigmaStorePi, tpcNSigmaStorePi, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for pion
+DECLARE_SOA_COLUMN(TPCNSigmaStoreKa, tpcNSigmaStoreKa, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for kaon
+DECLARE_SOA_COLUMN(TPCNSigmaStorePr, tpcNSigmaStorePr, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for proton
+DECLARE_SOA_COLUMN(TPCNSigmaStoreDe, tpcNSigmaStoreDe, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for deuteron
+DECLARE_SOA_COLUMN(TPCNSigmaStoreTr, tpcNSigmaStoreTr, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for triton
+DECLARE_SOA_COLUMN(TPCNSigmaStoreHe, tpcNSigmaStoreHe, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for helium3
+DECLARE_SOA_COLUMN(TPCNSigmaStoreAl, tpcNSigmaStoreAl, binned_nsigma_t); //! Stored binned nsigma with the TPC detector for alpha
 // NSigma with reduced size in [binned_min, binned_max] bin size bin_width
-DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaEl, tpcNSigmaEl); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaMu, tpcNSigmaMu); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaPi, tpcNSigmaPi); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaKa, tpcNSigmaKa); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaPr, tpcNSigmaPr); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaDe, tpcNSigmaDe); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaTr, tpcNSigmaTr); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaHe, tpcNSigmaHe); //!
-DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaAl, tpcNSigmaAl); //!
+DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaEl, tpcNSigmaEl); //! Unwrapped (float) nsigma with the TPC detector for electron
+DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaMu, tpcNSigmaMu); //! Unwrapped (float) nsigma with the TPC detector for muon
+DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaPi, tpcNSigmaPi); //! Unwrapped (float) nsigma with the TPC detector for pion
+DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaKa, tpcNSigmaKa); //! Unwrapped (float) nsigma with the TPC detector for kaon
+DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaPr, tpcNSigmaPr); //! Unwrapped (float) nsigma with the TPC detector for proton
+DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaDe, tpcNSigmaDe); //! Unwrapped (float) nsigma with the TPC detector for deuteron
+DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaTr, tpcNSigmaTr); //! Unwrapped (float) nsigma with the TPC detector for triton
+DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaHe, tpcNSigmaHe); //! Unwrapped (float) nsigma with the TPC detector for helium3
+DEFINE_UNWRAP_NSIGMA_COLUMN(TPCNSigmaAl, tpcNSigmaAl); //! Unwrapped (float) nsigma with the TPC detector for alpha
 
 } // namespace pidtpc_tiny
 
@@ -298,6 +314,38 @@ DECLARE_SOA_COLUMN(BayesProb, bayesProb, float);                    //! Bayesian
 DECLARE_SOA_COLUMN(BayesID, bayesID, o2::track::pid_constants::ID); //! Most probable ID
 } // namespace pidbayes
 
+namespace pidbayes_tiny
+{
+typedef int8_t binned_nsigma_t;
+constexpr int nbins = (1 << 8 * sizeof(binned_nsigma_t)) - 2;
+constexpr binned_nsigma_t upper_bin = nbins >> 1;
+constexpr binned_nsigma_t lower_bin = -(nbins >> 1);
+constexpr float binned_max = 6.35;
+constexpr float binned_min = -6.35;
+constexpr float bin_width = (binned_max - binned_min) / nbins;
+// NSigma with reduced size
+DECLARE_SOA_COLUMN(BayesStoreEl, bayesStoreEl, binned_nsigma_t); //! Stored Bayesian probability for electron
+DECLARE_SOA_COLUMN(BayesStoreMu, bayesStoreMu, binned_nsigma_t); //! Stored Bayesian probability for muon
+DECLARE_SOA_COLUMN(BayesStorePi, bayesStorePi, binned_nsigma_t); //! Stored Bayesian probability for pion
+DECLARE_SOA_COLUMN(BayesStoreKa, bayesStoreKa, binned_nsigma_t); //! Stored Bayesian probability for kaon
+DECLARE_SOA_COLUMN(BayesStorePr, bayesStorePr, binned_nsigma_t); //! Stored Bayesian probability for proton
+DECLARE_SOA_COLUMN(BayesStoreDe, bayesStoreDe, binned_nsigma_t); //! Stored Bayesian probability for deuteron
+DECLARE_SOA_COLUMN(BayesStoreTr, bayesStoreTr, binned_nsigma_t); //! Stored Bayesian probability for triton
+DECLARE_SOA_COLUMN(BayesStoreHe, bayesStoreHe, binned_nsigma_t); //! Stored Bayesian probability for helium3
+DECLARE_SOA_COLUMN(BayesStoreAl, bayesStoreAl, binned_nsigma_t); //! Stored Bayesian probability for alpha
+// NSigma with reduced size in [binned_min, binned_max] bin size bin_width
+DEFINE_UNWRAP_NSIGMA_COLUMN(BayesEl, bayesEl); //! Unwrapped (float) Bayesian probability for electron
+DEFINE_UNWRAP_NSIGMA_COLUMN(BayesMu, bayesMu); //! Unwrapped (float) Bayesian probability for muon
+DEFINE_UNWRAP_NSIGMA_COLUMN(BayesPi, bayesPi); //! Unwrapped (float) Bayesian probability for pion
+DEFINE_UNWRAP_NSIGMA_COLUMN(BayesKa, bayesKa); //! Unwrapped (float) Bayesian probability for kaon
+DEFINE_UNWRAP_NSIGMA_COLUMN(BayesPr, bayesPr); //! Unwrapped (float) Bayesian probability for proton
+DEFINE_UNWRAP_NSIGMA_COLUMN(BayesDe, bayesDe); //! Unwrapped (float) Bayesian probability for deuteron
+DEFINE_UNWRAP_NSIGMA_COLUMN(BayesTr, bayesTr); //! Unwrapped (float) Bayesian probability for triton
+DEFINE_UNWRAP_NSIGMA_COLUMN(BayesHe, bayesHe); //! Unwrapped (float) Bayesian probability for helium3
+DEFINE_UNWRAP_NSIGMA_COLUMN(BayesAl, bayesAl); //! Unwrapped (float) Bayesian probability for alpha
+
+} // namespace pidbayes_tiny
+
 // Per particle tables
 DECLARE_SOA_TABLE(pidBayesEl, "AOD", "pidBayesEl", pidbayes::BayesEl); //! Bayesian probability of having a Electron
 DECLARE_SOA_TABLE(pidBayesMu, "AOD", "pidBayesMu", pidbayes::BayesMu); //! Bayesian probability of having a Muon
@@ -311,6 +359,26 @@ DECLARE_SOA_TABLE(pidBayesAl, "AOD", "pidBayesAl", pidbayes::BayesAl); //! Bayes
 
 // Table for the most probable particle
 DECLARE_SOA_TABLE(pidBayes, "AOD", "pidBayes", pidbayes::BayesProb, pidbayes::BayesID); //! Index of the most probable ID and its bayesian probability
+
+// Tiny size tables
+DECLARE_SOA_TABLE(tpidBayesEl, "AOD", "tpidBayesEl", //! Binned Bayesian probability of having a Electron
+                  pidbayes_tiny::BayesStoreEl, pidbayes_tiny::BayesEl<pidbayes_tiny::BayesStoreEl>);
+DECLARE_SOA_TABLE(tpidBayesMu, "AOD", "tpidBayesMu", //! Binned Bayesian probability of having a Muon
+                  pidbayes_tiny::BayesStoreMu, pidbayes_tiny::BayesMu<pidbayes_tiny::BayesStoreMu>);
+DECLARE_SOA_TABLE(tpidBayesPi, "AOD", "tpidBayesPi", //! Binned Bayesian probability of having a Pion
+                  pidbayes_tiny::BayesStorePi, pidbayes_tiny::BayesPi<pidbayes_tiny::BayesStorePi>);
+DECLARE_SOA_TABLE(tpidBayesKa, "AOD", "tpidBayesKa", //! Binned Bayesian probability of having a Kaon
+                  pidbayes_tiny::BayesStoreKa, pidbayes_tiny::BayesKa<pidbayes_tiny::BayesStoreKa>);
+DECLARE_SOA_TABLE(tpidBayesPr, "AOD", "tpidBayesPr", //! Binned Bayesian probability of having a Proton
+                  pidbayes_tiny::BayesStorePr, pidbayes_tiny::BayesPr<pidbayes_tiny::BayesStorePr>);
+DECLARE_SOA_TABLE(tpidBayesDe, "AOD", "tpidBayesDe", //! Binned Bayesian probability of having a Deuteron
+                  pidbayes_tiny::BayesStoreDe, pidbayes_tiny::BayesDe<pidbayes_tiny::BayesStoreDe>);
+DECLARE_SOA_TABLE(tpidBayesTr, "AOD", "tpidBayesTr", //! Binned Bayesian probability of having a Triton
+                  pidbayes_tiny::BayesStoreTr, pidbayes_tiny::BayesTr<pidbayes_tiny::BayesStoreTr>);
+DECLARE_SOA_TABLE(tpidBayesHe, "AOD", "tpidBayesHe", //! Binned Bayesian probability of having a Helium3
+                  pidbayes_tiny::BayesStoreHe, pidbayes_tiny::BayesHe<pidbayes_tiny::BayesStoreHe>);
+DECLARE_SOA_TABLE(tpidBayesAl, "AOD", "tpidBayesAl", //! Binned Bayesian probability of having a Alpha
+                  pidbayes_tiny::BayesStoreAl, pidbayes_tiny::BayesAl<pidbayes_tiny::BayesStoreAl>);
 
 } // namespace o2::aod
 
