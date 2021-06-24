@@ -44,7 +44,17 @@ struct bayesPid {
   using Coll = aod::Collisions;
 
   // Tables to produce
-  Produces<o2::aod::pidBayes> tableBayes;   /// Table of the most probable particle type
+  Produces<o2::aod::pidBayes> tableBayes;           /// Table of the most probable particle type
+  Produces<o2::aod::pidBayesFullEl> tablePIDFullEl; /// Table for the Electron
+  Produces<o2::aod::pidBayesFullMu> tablePIDFullMu; /// Table for the Muon
+  Produces<o2::aod::pidBayesFullPi> tablePIDFullPi; /// Table for the Pion
+  Produces<o2::aod::pidBayesFullKa> tablePIDFullKa; /// Table for the Kaon
+  Produces<o2::aod::pidBayesFullPr> tablePIDFullPr; /// Table for the Proton
+  Produces<o2::aod::pidBayesFullDe> tablePIDFullDe; /// Table for the Deuteron
+  Produces<o2::aod::pidBayesFullTr> tablePIDFullTr; /// Table for the Triton
+  Produces<o2::aod::pidBayesFullHe> tablePIDFullHe; /// Table for the Helium3
+  Produces<o2::aod::pidBayesFullAl> tablePIDFullAl; /// Table for the Alpha
+
   Produces<o2::aod::pidBayesEl> tablePIDEl; /// Table for the Electron
   Produces<o2::aod::pidBayesMu> tablePIDMu; /// Table for the Muon
   Produces<o2::aod::pidBayesPi> tablePIDPi; /// Table for the Pion
@@ -437,6 +447,16 @@ struct bayesPid {
     };
 
     tableBayes.reserve(tracks.size());
+    makeTable(pidEl, tablePIDFullEl);
+    makeTable(pidMu, tablePIDFullMu);
+    makeTable(pidPi, tablePIDFullPi);
+    makeTable(pidKa, tablePIDFullKa);
+    makeTable(pidPr, tablePIDFullPr);
+    makeTable(pidDe, tablePIDFullDe);
+    makeTable(pidTr, tablePIDFullTr);
+    makeTable(pidHe, tablePIDFullHe);
+    makeTable(pidAl, tablePIDFullAl);
+
     makeTable(pidEl, tablePIDEl);
     makeTable(pidMu, tablePIDMu);
     makeTable(pidPi, tablePIDPi);
@@ -474,31 +494,40 @@ struct bayesPid {
       ComputeBayesProbabilities();
 
       if (pidEl == 1) {
-        tablePIDEl(Probability[kBayesian][PID::Electron]);
+        tablePIDFullEl(Probability[kBayesian][PID::Electron]);
+        tablePIDEl(Probability[kBayesian][PID::Electron] * 100.f);
       }
       if (pidMu == 1) {
-        tablePIDMu(Probability[kBayesian][PID::Muon]);
+        tablePIDFullMu(Probability[kBayesian][PID::Muon]);
+        tablePIDMu(Probability[kBayesian][PID::Muon] * 100.f);
       }
       if (pidPi == 1) {
-        tablePIDPi(Probability[kBayesian][PID::Pion]);
+        tablePIDFullPi(Probability[kBayesian][PID::Pion]);
+        tablePIDPi(Probability[kBayesian][PID::Pion] * 100.f);
       }
       if (pidKa == 1) {
-        tablePIDKa(Probability[kBayesian][PID::Kaon]);
+        tablePIDFullKa(Probability[kBayesian][PID::Kaon]);
+        tablePIDKa(Probability[kBayesian][PID::Kaon] * 100.f);
       }
       if (pidPr == 1) {
-        tablePIDPr(Probability[kBayesian][PID::Proton]);
+        tablePIDFullPr(Probability[kBayesian][PID::Proton]);
+        tablePIDPr(Probability[kBayesian][PID::Proton] * 100.f);
       }
       if (pidDe == 1) {
-        tablePIDDe(Probability[kBayesian][PID::Deuteron]);
+        tablePIDFullDe(Probability[kBayesian][PID::Deuteron]);
+        tablePIDDe(Probability[kBayesian][PID::Deuteron] * 100.f);
       }
       if (pidTr == 1) {
-        tablePIDTr(Probability[kBayesian][PID::Triton]);
+        tablePIDFullTr(Probability[kBayesian][PID::Triton]);
+        tablePIDTr(Probability[kBayesian][PID::Triton] * 100.f);
       }
       if (pidHe == 1) {
-        tablePIDHe(Probability[kBayesian][PID::Helium3]);
+        tablePIDFullHe(Probability[kBayesian][PID::Helium3]);
+        tablePIDHe(Probability[kBayesian][PID::Helium3] * 100.f);
       }
       if (pidAl == 1) {
-        tablePIDAl(Probability[kBayesian][PID::Alpha]);
+        tablePIDFullAl(Probability[kBayesian][PID::Alpha]);
+        tablePIDAl(Probability[kBayesian][PID::Alpha] * 100.f);
       }
       const auto mostProbable = std::max_element(Probability[kBayesian].begin(), Probability[kBayesian].end());
       tableBayes(*mostProbable, std::distance(Probability[kBayesian].begin(), mostProbable));

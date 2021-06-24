@@ -27,17 +27,18 @@ namespace o2::aod
 {
 namespace pidutils
 {
-template <typename T, const T underflow, const T overflow, const float lowest, const float highest, const float width, typename tableType>
-void packInTable(const float& separation, tableType& table)
+// Function to pack a float into a binned value in table
+template <typename T, const T underflow, const T overflow, typename tableType>
+void packInTable(const float& separation, tableType& table, const float& lowest, const float& highest, const float& width)
 {
   if (separation <= lowest) {
     table(underflow);
   } else if (separation >= highest) {
     table(overflow);
   } else if (separation >= 0) {
-    table(separation / width + 0.5f);
+    table(static_cast<T>(separation / width + 0.5f));
   } else {
-    table(separation / width - 0.5f);
+    table(static_cast<T>(separation / width - 0.5f));
   }
 }
 } // namespace pidutils
@@ -316,69 +317,59 @@ DECLARE_SOA_COLUMN(BayesID, bayesID, o2::track::pid_constants::ID); //! Most pro
 
 namespace pidbayes_tiny
 {
-typedef int8_t binned_nsigma_t;
-constexpr int nbins = (1 << 8 * sizeof(binned_nsigma_t)) - 2;
-constexpr binned_nsigma_t upper_bin = nbins >> 1;
-constexpr binned_nsigma_t lower_bin = -(nbins >> 1);
-constexpr float binned_max = 6.35;
-constexpr float binned_min = -6.35;
+typedef int8_t binned_prob_t;
+constexpr int nbins = (1 << 8 * sizeof(binned_prob_t)) - 2;
+constexpr binned_prob_t upper_bin = nbins >> 1;
+constexpr binned_prob_t lower_bin = -(nbins >> 1);
+constexpr float binned_max = 100.f;
+constexpr float binned_min = 0.f;
 constexpr float bin_width = (binned_max - binned_min) / nbins;
-// NSigma with reduced size
-DECLARE_SOA_COLUMN(BayesStoreEl, bayesStoreEl, binned_nsigma_t); //! Stored Bayesian probability for electron
-DECLARE_SOA_COLUMN(BayesStoreMu, bayesStoreMu, binned_nsigma_t); //! Stored Bayesian probability for muon
-DECLARE_SOA_COLUMN(BayesStorePi, bayesStorePi, binned_nsigma_t); //! Stored Bayesian probability for pion
-DECLARE_SOA_COLUMN(BayesStoreKa, bayesStoreKa, binned_nsigma_t); //! Stored Bayesian probability for kaon
-DECLARE_SOA_COLUMN(BayesStorePr, bayesStorePr, binned_nsigma_t); //! Stored Bayesian probability for proton
-DECLARE_SOA_COLUMN(BayesStoreDe, bayesStoreDe, binned_nsigma_t); //! Stored Bayesian probability for deuteron
-DECLARE_SOA_COLUMN(BayesStoreTr, bayesStoreTr, binned_nsigma_t); //! Stored Bayesian probability for triton
-DECLARE_SOA_COLUMN(BayesStoreHe, bayesStoreHe, binned_nsigma_t); //! Stored Bayesian probability for helium3
-DECLARE_SOA_COLUMN(BayesStoreAl, bayesStoreAl, binned_nsigma_t); //! Stored Bayesian probability for alpha
-// NSigma with reduced size in [binned_min, binned_max] bin size bin_width
-DEFINE_UNWRAP_NSIGMA_COLUMN(BayesEl, bayesEl); //! Unwrapped (float) Bayesian probability for electron
-DEFINE_UNWRAP_NSIGMA_COLUMN(BayesMu, bayesMu); //! Unwrapped (float) Bayesian probability for muon
-DEFINE_UNWRAP_NSIGMA_COLUMN(BayesPi, bayesPi); //! Unwrapped (float) Bayesian probability for pion
-DEFINE_UNWRAP_NSIGMA_COLUMN(BayesKa, bayesKa); //! Unwrapped (float) Bayesian probability for kaon
-DEFINE_UNWRAP_NSIGMA_COLUMN(BayesPr, bayesPr); //! Unwrapped (float) Bayesian probability for proton
-DEFINE_UNWRAP_NSIGMA_COLUMN(BayesDe, bayesDe); //! Unwrapped (float) Bayesian probability for deuteron
-DEFINE_UNWRAP_NSIGMA_COLUMN(BayesTr, bayesTr); //! Unwrapped (float) Bayesian probability for triton
-DEFINE_UNWRAP_NSIGMA_COLUMN(BayesHe, bayesHe); //! Unwrapped (float) Bayesian probability for helium3
-DEFINE_UNWRAP_NSIGMA_COLUMN(BayesAl, bayesAl); //! Unwrapped (float) Bayesian probability for alpha
+// Bayesian probabilities with reduced size
+DECLARE_SOA_COLUMN(BayesEl, bayesEl, binned_prob_t); //! Bayesian probability for electron expressed in %
+DECLARE_SOA_COLUMN(BayesMu, bayesMu, binned_prob_t); //! Bayesian probability for muon expressed in %
+DECLARE_SOA_COLUMN(BayesPi, bayesPi, binned_prob_t); //! Bayesian probability for pion expressed in %
+DECLARE_SOA_COLUMN(BayesKa, bayesKa, binned_prob_t); //! Bayesian probability for kaon expressed in %
+DECLARE_SOA_COLUMN(BayesPr, bayesPr, binned_prob_t); //! Bayesian probability for proton expressed in %
+DECLARE_SOA_COLUMN(BayesDe, bayesDe, binned_prob_t); //! Bayesian probability for deuteron expressed in %
+DECLARE_SOA_COLUMN(BayesTr, bayesTr, binned_prob_t); //! Bayesian probability for triton expressed in %
+DECLARE_SOA_COLUMN(BayesHe, bayesHe, binned_prob_t); //! Bayesian probability for helium3 expressed in %
+DECLARE_SOA_COLUMN(BayesAl, bayesAl, binned_prob_t); //! Bayesian probability for alpha expressed in %
 
 } // namespace pidbayes_tiny
 
 // Per particle tables
-DECLARE_SOA_TABLE(pidBayesEl, "AOD", "pidBayesEl", pidbayes::BayesEl); //! Bayesian probability of having a Electron
-DECLARE_SOA_TABLE(pidBayesMu, "AOD", "pidBayesMu", pidbayes::BayesMu); //! Bayesian probability of having a Muon
-DECLARE_SOA_TABLE(pidBayesPi, "AOD", "pidBayesPi", pidbayes::BayesPi); //! Bayesian probability of having a Pion
-DECLARE_SOA_TABLE(pidBayesKa, "AOD", "pidBayesKa", pidbayes::BayesKa); //! Bayesian probability of having a Kaon
-DECLARE_SOA_TABLE(pidBayesPr, "AOD", "pidBayesPr", pidbayes::BayesPr); //! Bayesian probability of having a Proton
-DECLARE_SOA_TABLE(pidBayesDe, "AOD", "pidBayesDe", pidbayes::BayesDe); //! Bayesian probability of having a Deuteron
-DECLARE_SOA_TABLE(pidBayesTr, "AOD", "pidBayesTr", pidbayes::BayesTr); //! Bayesian probability of having a Triton
-DECLARE_SOA_TABLE(pidBayesHe, "AOD", "pidBayesHe", pidbayes::BayesHe); //! Bayesian probability of having a Helium3
-DECLARE_SOA_TABLE(pidBayesAl, "AOD", "pidBayesAl", pidbayes::BayesAl); //! Bayesian probability of having a Alpha
+DECLARE_SOA_TABLE(pidBayesFullEl, "AOD", "pidBayesFullEl", pidbayes::BayesEl); //! Bayesian probability of having a Electron
+DECLARE_SOA_TABLE(pidBayesFullMu, "AOD", "pidBayesFullMu", pidbayes::BayesMu); //! Bayesian probability of having a Muon
+DECLARE_SOA_TABLE(pidBayesFullPi, "AOD", "pidBayesFullPi", pidbayes::BayesPi); //! Bayesian probability of having a Pion
+DECLARE_SOA_TABLE(pidBayesFullKa, "AOD", "pidBayesFullKa", pidbayes::BayesKa); //! Bayesian probability of having a Kaon
+DECLARE_SOA_TABLE(pidBayesFullPr, "AOD", "pidBayesFullPr", pidbayes::BayesPr); //! Bayesian probability of having a Proton
+DECLARE_SOA_TABLE(pidBayesFullDe, "AOD", "pidBayesFullDe", pidbayes::BayesDe); //! Bayesian probability of having a Deuteron
+DECLARE_SOA_TABLE(pidBayesFullTr, "AOD", "pidBayesFullTr", pidbayes::BayesTr); //! Bayesian probability of having a Triton
+DECLARE_SOA_TABLE(pidBayesFullHe, "AOD", "pidBayesFullHe", pidbayes::BayesHe); //! Bayesian probability of having a Helium3
+DECLARE_SOA_TABLE(pidBayesFullAl, "AOD", "pidBayesFullAl", pidbayes::BayesAl); //! Bayesian probability of having a Alpha
 
 // Table for the most probable particle
 DECLARE_SOA_TABLE(pidBayes, "AOD", "pidBayes", pidbayes::BayesProb, pidbayes::BayesID); //! Index of the most probable ID and its bayesian probability
 
 // Tiny size tables
-DECLARE_SOA_TABLE(tpidBayesEl, "AOD", "tpidBayesEl", //! Binned Bayesian probability of having a Electron
-                  pidbayes_tiny::BayesStoreEl, pidbayes_tiny::BayesEl<pidbayes_tiny::BayesStoreEl>);
-DECLARE_SOA_TABLE(tpidBayesMu, "AOD", "tpidBayesMu", //! Binned Bayesian probability of having a Muon
-                  pidbayes_tiny::BayesStoreMu, pidbayes_tiny::BayesMu<pidbayes_tiny::BayesStoreMu>);
-DECLARE_SOA_TABLE(tpidBayesPi, "AOD", "tpidBayesPi", //! Binned Bayesian probability of having a Pion
-                  pidbayes_tiny::BayesStorePi, pidbayes_tiny::BayesPi<pidbayes_tiny::BayesStorePi>);
-DECLARE_SOA_TABLE(tpidBayesKa, "AOD", "tpidBayesKa", //! Binned Bayesian probability of having a Kaon
-                  pidbayes_tiny::BayesStoreKa, pidbayes_tiny::BayesKa<pidbayes_tiny::BayesStoreKa>);
-DECLARE_SOA_TABLE(tpidBayesPr, "AOD", "tpidBayesPr", //! Binned Bayesian probability of having a Proton
-                  pidbayes_tiny::BayesStorePr, pidbayes_tiny::BayesPr<pidbayes_tiny::BayesStorePr>);
-DECLARE_SOA_TABLE(tpidBayesDe, "AOD", "tpidBayesDe", //! Binned Bayesian probability of having a Deuteron
-                  pidbayes_tiny::BayesStoreDe, pidbayes_tiny::BayesDe<pidbayes_tiny::BayesStoreDe>);
-DECLARE_SOA_TABLE(tpidBayesTr, "AOD", "tpidBayesTr", //! Binned Bayesian probability of having a Triton
-                  pidbayes_tiny::BayesStoreTr, pidbayes_tiny::BayesTr<pidbayes_tiny::BayesStoreTr>);
-DECLARE_SOA_TABLE(tpidBayesHe, "AOD", "tpidBayesHe", //! Binned Bayesian probability of having a Helium3
-                  pidbayes_tiny::BayesStoreHe, pidbayes_tiny::BayesHe<pidbayes_tiny::BayesStoreHe>);
-DECLARE_SOA_TABLE(tpidBayesAl, "AOD", "tpidBayesAl", //! Binned Bayesian probability of having a Alpha
-                  pidbayes_tiny::BayesStoreAl, pidbayes_tiny::BayesAl<pidbayes_tiny::BayesStoreAl>);
+DECLARE_SOA_TABLE(pidBayesEl, "AOD", "pidBayesEl", //! Binned Bayesian probability of having a Electron
+                  pidbayes_tiny::BayesEl);
+DECLARE_SOA_TABLE(pidBayesMu, "AOD", "pidBayesMu", //! Binned Bayesian probability of having a Muon
+                  pidbayes_tiny::BayesMu);
+DECLARE_SOA_TABLE(pidBayesPi, "AOD", "pidBayesPi", //! Binned Bayesian probability of having a Pion
+                  pidbayes_tiny::BayesPi);
+DECLARE_SOA_TABLE(pidBayesKa, "AOD", "pidBayesKa", //! Binned Bayesian probability of having a Kaon
+                  pidbayes_tiny::BayesKa);
+DECLARE_SOA_TABLE(pidBayesPr, "AOD", "pidBayesPr", //! Binned Bayesian probability of having a Proton
+                  pidbayes_tiny::BayesPr);
+DECLARE_SOA_TABLE(pidBayesDe, "AOD", "pidBayesDe", //! Binned Bayesian probability of having a Deuteron
+                  pidbayes_tiny::BayesDe);
+DECLARE_SOA_TABLE(pidBayesTr, "AOD", "pidBayesTr", //! Binned Bayesian probability of having a Triton
+                  pidbayes_tiny::BayesTr);
+DECLARE_SOA_TABLE(pidBayesHe, "AOD", "pidBayesHe", //! Binned Bayesian probability of having a Helium3
+                  pidbayes_tiny::BayesHe);
+DECLARE_SOA_TABLE(pidBayesAl, "AOD", "pidBayesAl", //! Binned Bayesian probability of having a Alpha
+                  pidbayes_tiny::BayesAl);
 
 } // namespace o2::aod
 
