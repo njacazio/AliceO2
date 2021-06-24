@@ -381,7 +381,6 @@ DECLARE_SOA_TABLE(tpidBayesHe, "AOD", "tpidBayesHe", //! Binned Bayesian probabi
 DECLARE_SOA_TABLE(tpidBayesAl, "AOD", "tpidBayesAl", //! Binned Bayesian probability of having a Alpha
                   pidbayes_tiny::BayesStoreAl);
 
-
 } // namespace o2::aod
 
 #endif // O2_FRAMEWORK_PIDRESPONSE_H_
