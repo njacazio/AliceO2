@@ -111,12 +111,12 @@ struct tofPidQaBeta {
                aod::Collisions const&)
   {
     for (auto const& track : tracks) {
-      //
+
       if (!track.hasTOF()) { // Skipping tracks without TOF
-        return;
+        continue;
       }
       if (!track.isGlobalTrack()) {
-        return;
+        continue;
       }
       histos.fill(HIST("event/tofbeta"), track.p(), track.beta());
       histos.fill(HIST("event/length"), track.length());
