@@ -39,7 +39,7 @@ struct Alice3TrackSelectionTask {
 
   void init(InitContext&)
   {
-    histos.add("selection", "Selection process;Check;Entries", HistType::kTH1F, {{10, -0.5, 9.5}});
+    histos.add("selection", "Selection process;Check;Tracks discarded by the cut", HistType::kTH1F, {{10, -0.5, 9.5}});
     histos.get<TH1>(HIST("selection"))->GetXaxis()->SetBinLabel(1, "Tracks read");
     histos.get<TH1>(HIST("selection"))->GetXaxis()->SetBinLabel(2, "DCAxy");
     histos.get<TH1>(HIST("selection"))->GetXaxis()->SetBinLabel(3, "Eta");
