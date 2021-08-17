@@ -32,6 +32,9 @@ struct Alice3CDeuteron {
   Configurable<float> minRadius{"minRadius", 0, "Minimum decay radius"};
   Configurable<float> maxRadius{"maxRadius", 0.1, "Maximum decay radius"};
   Configurable<float> minMomPt{"minMomPt", 0.0, "Minimum pT of the mother"};
+  Configurable<float> minKaonPt{"minKaonPt", 0.0, "Minimum pT of the pion daughter"};
+  Configurable<float> minPionPt{"minPionPt", 0.0, "Minimum pT of the kaon daughter"};
+  Configurable<float> minVtxContrib{"minVtxContrib", 3, "Minimum number of contributors to the primary vertex"};
   Configurable<float> minDca{"minDca", 0.0001, "Minimum track DCA to the primary vertex"};
   Configurable<float> maxDca{"maxDca", 0.001, "Maximum track DCA to the primary vertex"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -67,12 +70,16 @@ struct Alice3CDeuteron {
     histos.add("sig/decayradiusReso", "decayradiusReso" + tit, kTH1D, {axisDecayRadiusReso});
     histos.add("sig/decaydca0", "decaydca0" + tit, kTH1D, {axisDca});
     histos.add("sig/decaydca1", "decaydca1" + tit, kTH1D, {axisDca});
-    histos.add("sig/dcaxy1", "dcaxy1" + tit, kTH1D, {axisDcaXY});
-    histos.add("sig/dcaxy2", "dcaxy2" + tit, kTH1D, {axisDcaXY});
-    histos.add("sig/dcaxy3", "dcaxy3" + tit, kTH1D, {axisDcaXY});
-    histos.add("sig/dcaz1", "dcaz1" + tit, kTH1D, {axisDcaZ});
-    histos.add("sig/dcaz2", "dcaz2" + tit, kTH1D, {axisDcaZ});
-    histos.add("sig/dcaz3", "dcaz3" + tit, kTH1D, {axisDcaZ});
+    histos.add("sig/dcaxy1", "dcaxy1 Deuteron" + tit, kTH1D, {axisDcaXY});
+    histos.add("sig/dcaxy2", "dcaxy2 Kaon" + tit, kTH1D, {axisDcaXY});
+    histos.add("sig/dcaxy3", "dcaxy3 Pion" + tit, kTH1D, {axisDcaXY});
+    histos.add("sig/dcaxy1xdcaxy2", "dcaxy1xdcaxy2" + tit, kTH1D, {axisDcaXY});
+    histos.add("sig/dcaxy3xdcaxy2", "dcaxy3xdcaxy2" + tit, kTH1D, {axisDcaXY});
+    histos.add("sig/dcaz1", "dcaz1 Deuteron" + tit, kTH1D, {axisDcaZ});
+    histos.add("sig/dcaz2", "dcaz2 Kaon" + tit, kTH1D, {axisDcaZ});
+    histos.add("sig/dcaz3", "dcaz3 Pion" + tit, kTH1D, {axisDcaZ});
+    histos.add("sig/dcaz1xdcaz2", "dcaz1xdcaz2" + tit, kTH1D, {axisDcaZ});
+    histos.add("sig/dcaz3xdcaz2", "dcaz3xdcaz2" + tit, kTH1D, {axisDcaZ});
 
     histos.add("bkg/invmass", "invmass" + tit, kTH1D, {axisInvMass});
     histos.add("bkg/decayradius", "decayradius" + tit, kTH1D, {axisDecayRadius});
@@ -82,12 +89,16 @@ struct Alice3CDeuteron {
     histos.add("bkg/decayradiusReso", "decayradiusReso" + tit, kTH1D, {axisDecayRadiusReso});
     histos.add("bkg/decaydca0", "decaydca0" + tit, kTH1D, {axisDca});
     histos.add("bkg/decaydca1", "decaydca1" + tit, kTH1D, {axisDca});
-    histos.add("bkg/dcaxy1", "dcaxy1" + tit, kTH1D, {axisDcaXY});
-    histos.add("bkg/dcaxy2", "dcaxy2" + tit, kTH1D, {axisDcaXY});
-    histos.add("bkg/dcaxy3", "dcaxy3" + tit, kTH1D, {axisDcaXY});
-    histos.add("bkg/dcaz1", "dcaz1" + tit, kTH1D, {axisDcaZ});
-    histos.add("bkg/dcaz2", "dcaz2" + tit, kTH1D, {axisDcaZ});
-    histos.add("bkg/dcaz3", "dcaz3" + tit, kTH1D, {axisDcaZ});
+    histos.add("bkg/dcaxy1", "dcaxy1 Deuteron" + tit, kTH1D, {axisDcaXY});
+    histos.add("bkg/dcaxy2", "dcaxy2 Kaon" + tit, kTH1D, {axisDcaXY});
+    histos.add("bkg/dcaxy3", "dcaxy3 Pion" + tit, kTH1D, {axisDcaXY});
+    histos.add("bkg/dcaxy1xdcaxy2", "dcaxy1xdcaxy2" + tit, kTH1D, {axisDcaXY});
+    histos.add("bkg/dcaxy3xdcaxy2", "dcaxy3xdcaxy2" + tit, kTH1D, {axisDcaXY});
+    histos.add("bkg/dcaz1", "dcaz1 Deuteron" + tit, kTH1D, {axisDcaZ});
+    histos.add("bkg/dcaz2", "dcaz2 Kaon" + tit, kTH1D, {axisDcaZ});
+    histos.add("bkg/dcaz3", "dcaz3 Pion" + tit, kTH1D, {axisDcaZ});
+    histos.add("bkg/dcaz1xdcaz2", "dcaz1xdcaz2" + tit, kTH1D, {axisDcaZ});
+    histos.add("bkg/dcaz3xdcaz2", "dcaz3xdcaz2" + tit, kTH1D, {axisDcaZ});
   }
 
   void process(const soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& coll,
@@ -128,6 +139,9 @@ struct Alice3CDeuteron {
         if (track2.mcParticle().pdgCode() != -321) {
           continue;
         }
+        if (track2.pt() < minKaonPt) {
+          continue;
+        }
         if (!getTrackPar(track2).propagateParamToDCA({coll.posX(),
                                                       coll.posY(),
                                                       coll.posZ()},
@@ -153,7 +167,9 @@ struct Alice3CDeuteron {
           if (track3.mcParticle().pdgCode() != 211) {
             continue;
           }
-
+          if (track3.pt() < minPionPt) {
+            continue;
+          }
           if (!getTrackPar(track3).propagateParamToDCA({coll.posX(),
                                                         coll.posY(),
                                                         coll.posZ()},
@@ -207,7 +223,7 @@ struct Alice3CDeuteron {
             v3.SetPtEtaPhiM(track3.pt(), track3.eta(), track3.phi(), 0.139570);
             v1 += v2;
             v1 += v3;
-            if (v1.pT < minMomPt) {
+            if (v1.Pt() < minMomPt) {
               continue;
             }
             if (issig) {
@@ -246,6 +262,12 @@ struct Alice3CDeuteron {
               histos.fill(HIST("sig/dcaxy3"), dca3[0]);
               histos.fill(HIST("sig/dcaz3"), dca3[1]);
 
+              histos.fill(HIST("sig/dcaxy1xdcaxy2"), dca1[0] * dca2[0]);
+              histos.fill(HIST("sig/dcaz1xdcaz2"), dca1[1] * dca2[1]);
+
+              histos.fill(HIST("sig/dcaxy3xdcaxy2"), dca3[0] * dca2[0]);
+              histos.fill(HIST("sig/dcaz3xdcaz2"), dca3[1] * dca2[1]);
+
             } else {
               histos.fill(HIST("bkg/decayradius"), r);
               histos.fill(HIST("bkg/decayradiusResoX"), secVtx[0] - vx);
@@ -260,6 +282,12 @@ struct Alice3CDeuteron {
               histos.fill(HIST("bkg/dcaz2"), dca2[1]);
               histos.fill(HIST("bkg/dcaxy3"), dca3[0]);
               histos.fill(HIST("bkg/dcaz3"), dca3[1]);
+
+              histos.fill(HIST("bkg/dcaxy1xdcaxy2"), dca1[0] * dca2[0]);
+              histos.fill(HIST("bkg/dcaz1xdcaz2"), dca1[1] * dca2[1]);
+
+              histos.fill(HIST("bkg/dcaxy3xdcaxy2"), dca3[0] * dca2[0]);
+              histos.fill(HIST("bkg/dcaz3xdcaz2"), dca3[1] * dca2[1]);
             }
 
             // fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
