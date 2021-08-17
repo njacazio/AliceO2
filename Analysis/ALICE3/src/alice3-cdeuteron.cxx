@@ -58,47 +58,38 @@ struct Alice3CDeuteron {
     const AxisSpec axisDca{5000, -0.01, 0.01, "DCA to secondary"};
     const AxisSpec axisDcaXY{5000, -0.05, 0.05, "DCA_{xy}"};
     const AxisSpec axisDcaZ{5000, -0.05, 0.05, "DCA_{z}"};
+    const AxisSpec axisPt{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
     const TString tit = Form(" [%.6f, %.6f] R [%.6f, %.6f] DCA ",
                              minRadius.value, maxRadius.value,
                              minDca.value, maxDca.value);
 
-    histos.add("sig/invmass", "invmass" + tit, kTH1D, {axisInvMass});
-    histos.add("sig/decayradius", "decayradius" + tit, kTH1D, {axisDecayRadius});
-    histos.add("sig/decayradiusResoX", "decayradiusResoX" + tit, kTH1D, {axisDecayRadiusReso});
-    histos.add("sig/decayradiusResoY", "decayradiusResoY" + tit, kTH1D, {axisDecayRadiusReso});
-    histos.add("sig/decayradiusResoZ", "decayradiusResoZ" + tit, kTH1D, {axisDecayRadiusReso});
-    histos.add("sig/decayradiusReso", "decayradiusReso" + tit, kTH1D, {axisDecayRadiusReso});
-    histos.add("sig/decaydca0", "decaydca0" + tit, kTH1D, {axisDca});
-    histos.add("sig/decaydca1", "decaydca1" + tit, kTH1D, {axisDca});
-    histos.add("sig/dcaxy1", "dcaxy1 Deuteron" + tit, kTH1D, {axisDcaXY});
-    histos.add("sig/dcaxy2", "dcaxy2 Kaon" + tit, kTH1D, {axisDcaXY});
-    histos.add("sig/dcaxy3", "dcaxy3 Pion" + tit, kTH1D, {axisDcaXY});
-    histos.add("sig/dcaxy1xdcaxy2", "dcaxy1xdcaxy2" + tit, kTH1D, {axisDcaXY});
-    histos.add("sig/dcaxy3xdcaxy2", "dcaxy3xdcaxy2" + tit, kTH1D, {axisDcaXY});
-    histos.add("sig/dcaz1", "dcaz1 Deuteron" + tit, kTH1D, {axisDcaZ});
-    histos.add("sig/dcaz2", "dcaz2 Kaon" + tit, kTH1D, {axisDcaZ});
-    histos.add("sig/dcaz3", "dcaz3 Pion" + tit, kTH1D, {axisDcaZ});
-    histos.add("sig/dcaz1xdcaz2", "dcaz1xdcaz2" + tit, kTH1D, {axisDcaZ});
-    histos.add("sig/dcaz3xdcaz2", "dcaz3xdcaz2" + tit, kTH1D, {axisDcaZ});
+#define MakeHistos(tag)                                                                        \
+  histos.add(tag "/invmass", "invmass" + tit, kTH1D, {axisInvMass});                           \
+  histos.add(tag "/decayradius", "decayradius" + tit, kTH1D, {axisDecayRadius});               \
+  histos.add(tag "/decayradiusResoX", "decayradiusResoX" + tit, kTH1D, {axisDecayRadiusReso}); \
+  histos.add(tag "/decayradiusResoY", "decayradiusResoY" + tit, kTH1D, {axisDecayRadiusReso}); \
+  histos.add(tag "/decayradiusResoZ", "decayradiusResoZ" + tit, kTH1D, {axisDecayRadiusReso}); \
+  histos.add(tag "/decayradiusReso", "decayradiusReso" + tit, kTH1D, {axisDecayRadiusReso});   \
+  histos.add(tag "/decaydca0", "decaydca0" + tit, kTH1D, {axisDca});                           \
+  histos.add(tag "/decaydca1", "decaydca1" + tit, kTH1D, {axisDca});                           \
+  histos.add(tag "/dcaxy1", "dcaxy1 Deuteron" + tit, kTH1D, {axisDcaXY});                      \
+  histos.add(tag "/dcaxy2", "dcaxy2 Kaon" + tit, kTH1D, {axisDcaXY});                          \
+  histos.add(tag "/dcaxy3", "dcaxy3 Pion" + tit, kTH1D, {axisDcaXY});                          \
+  histos.add(tag "/dcaxy1xdcaxy2", "dcaxy1xdcaxy2" + tit, kTH1D, {axisDcaXY});                 \
+  histos.add(tag "/dcaxy3xdcaxy2", "dcaxy3xdcaxy2" + tit, kTH1D, {axisDcaXY});                 \
+  histos.add(tag "/dcaz1", "dcaz1 Deuteron" + tit, kTH1D, {axisDcaZ});                         \
+  histos.add(tag "/dcaz2", "dcaz2 Kaon" + tit, kTH1D, {axisDcaZ});                             \
+  histos.add(tag "/dcaz3", "dcaz3 Pion" + tit, kTH1D, {axisDcaZ});                             \
+  histos.add(tag "/dcaz1xdcaz2", "dcaz1xdcaz2" + tit, kTH1D, {axisDcaZ});                      \
+  histos.add(tag "/dcaz3xdcaz2", "dcaz3xdcaz2" + tit, kTH1D, {axisDcaZ});                      \
+  histos.add(tag "/pt1", "pt1 Deuteron" + tit, kTH1D, {axisPt});                               \
+  histos.add(tag "/pt2", "pt2 Kaon" + tit, kTH1D, {axisPt});                                   \
+  histos.add(tag "/pt3", "pt3 Pion" + tit, kTH1D, {axisPt});
 
-    histos.add("bkg/invmass", "invmass" + tit, kTH1D, {axisInvMass});
-    histos.add("bkg/decayradius", "decayradius" + tit, kTH1D, {axisDecayRadius});
-    histos.add("bkg/decayradiusResoX", "decayradiusResoX" + tit, kTH1D, {axisDecayRadiusReso});
-    histos.add("bkg/decayradiusResoY", "decayradiusResoY" + tit, kTH1D, {axisDecayRadiusReso});
-    histos.add("bkg/decayradiusResoZ", "decayradiusResoZ" + tit, kTH1D, {axisDecayRadiusReso});
-    histos.add("bkg/decayradiusReso", "decayradiusReso" + tit, kTH1D, {axisDecayRadiusReso});
-    histos.add("bkg/decaydca0", "decaydca0" + tit, kTH1D, {axisDca});
-    histos.add("bkg/decaydca1", "decaydca1" + tit, kTH1D, {axisDca});
-    histos.add("bkg/dcaxy1", "dcaxy1 Deuteron" + tit, kTH1D, {axisDcaXY});
-    histos.add("bkg/dcaxy2", "dcaxy2 Kaon" + tit, kTH1D, {axisDcaXY});
-    histos.add("bkg/dcaxy3", "dcaxy3 Pion" + tit, kTH1D, {axisDcaXY});
-    histos.add("bkg/dcaxy1xdcaxy2", "dcaxy1xdcaxy2" + tit, kTH1D, {axisDcaXY});
-    histos.add("bkg/dcaxy3xdcaxy2", "dcaxy3xdcaxy2" + tit, kTH1D, {axisDcaXY});
-    histos.add("bkg/dcaz1", "dcaz1 Deuteron" + tit, kTH1D, {axisDcaZ});
-    histos.add("bkg/dcaz2", "dcaz2 Kaon" + tit, kTH1D, {axisDcaZ});
-    histos.add("bkg/dcaz3", "dcaz3 Pion" + tit, kTH1D, {axisDcaZ});
-    histos.add("bkg/dcaz1xdcaz2", "dcaz1xdcaz2" + tit, kTH1D, {axisDcaZ});
-    histos.add("bkg/dcaz3xdcaz2", "dcaz3xdcaz2" + tit, kTH1D, {axisDcaZ});
+    MakeHistos("sig");
+    MakeHistos("bkg");
+
+#undef MakeHistos
   }
 
   void process(const soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& coll,
@@ -113,7 +104,9 @@ struct Alice3CDeuteron {
     std::array<float, 2> dca1{1e10f, 1e10f};
     std::array<float, 2> dca2{1e10f, 1e10f};
     std::array<float, 2> dca3{1e10f, 1e10f};
+    bool iscut = false;
     for (const auto& track1 : tracks) {
+      iscut = false;
       const auto index1 = track1.globalIndex();
       if (track1.mcParticle().pdgCode() != 1000010020) {
         continue;
@@ -126,10 +119,10 @@ struct Alice3CDeuteron {
       }
 
       if (abs(dca1[0]) < minDca || abs(dca1[1]) < minDca) {
-        continue;
+        iscut = true;
       }
       if (abs(dca1[0]) > maxDca || abs(dca1[1]) > maxDca) {
-        continue;
+        iscut = true;
       }
       for (const auto& track2 : tracks) {
         const auto index2 = track2.globalIndex();
@@ -140,7 +133,7 @@ struct Alice3CDeuteron {
           continue;
         }
         if (track2.pt() < minKaonPt) {
-          continue;
+          iscut = true;
         }
         if (!getTrackPar(track2).propagateParamToDCA({coll.posX(),
                                                       coll.posY(),
@@ -150,10 +143,10 @@ struct Alice3CDeuteron {
         }
 
         if (abs(dca2[0]) < minDca || abs(dca2[1]) < minDca) {
-          continue;
+          iscut = true;
         }
         if (abs(dca2[0]) > maxDca || abs(dca2[1]) > maxDca) {
-          continue;
+          iscut = true;
         }
 
         for (const auto& track3 : tracks) {
@@ -168,7 +161,7 @@ struct Alice3CDeuteron {
             continue;
           }
           if (track3.pt() < minPionPt) {
-            continue;
+            iscut = true;
           }
           if (!getTrackPar(track3).propagateParamToDCA({coll.posX(),
                                                         coll.posY(),
@@ -178,10 +171,10 @@ struct Alice3CDeuteron {
           }
 
           if (abs(dca3[0]) < minDca || abs(dca3[1]) < minDca) {
-            continue;
+            iscut = true;
           }
           if (abs(dca3[0]) > maxDca || abs(dca3[1]) > maxDca) {
-            continue;
+            iscut = true;
           }
 
           const auto mother1 = track1.mcParticle().mother0_as<aod::McParticles>();
@@ -224,7 +217,7 @@ struct Alice3CDeuteron {
             v1 += v2;
             v1 += v3;
             if (v1.Pt() < minMomPt) {
-              continue;
+              iscut = true;
             }
             if (issig) {
               histos.fill(HIST("sig/invmass"), v1.M());
@@ -236,59 +229,45 @@ struct Alice3CDeuteron {
             const auto& secVtx = fitter.getPCACandidate();
             const float r = sqrt(secVtx[0] * secVtx[0] + secVtx[1] * secVtx[1] + secVtx[2] * secVtx[2]);
             if (r < minRadius) {
-              continue;
+              iscut = true;
             }
             if (r > maxRadius) {
-              continue;
+              iscut = true;
             }
 
             const float vx = mother1.vx();
             const float vy = mother1.vy();
             const float vz = mother1.vz();
             const float rmc = sqrt((secVtx[0] - vx) * (secVtx[0] - vx) + (secVtx[1] - vy) * (secVtx[1] - vy) + (secVtx[2] - vz) * (secVtx[2] - vz));
+
+#define FillHistos(tag)                                                              \
+  histos.fill(HIST(tag "/decayradius"), r);                                          \
+  histos.fill(HIST(tag "/decayradiusResoX"), secVtx[0] - vx);                        \
+  histos.fill(HIST(tag "/decayradiusResoY"), secVtx[1] - vy);                        \
+  histos.fill(HIST(tag "/decayradiusResoZ"), secVtx[2] - vz);                        \
+  histos.fill(HIST(tag "/decayradiusReso"), rmc);                                    \
+  histos.fill(HIST(tag "/decaydca0"), TMath::Sqrt(fitter.getChi2AtPCACandidate(0))); \
+  histos.fill(HIST(tag "/decaydca1"), TMath::Sqrt(fitter.getChi2AtPCACandidate(1))); \
+  histos.fill(HIST(tag "/dcaxy1"), dca1[0]);                                         \
+  histos.fill(HIST(tag "/dcaz1"), dca1[1]);                                          \
+  histos.fill(HIST(tag "/dcaxy2"), dca2[0]);                                         \
+  histos.fill(HIST(tag "/dcaz2"), dca2[1]);                                          \
+  histos.fill(HIST(tag "/dcaxy3"), dca3[0]);                                         \
+  histos.fill(HIST(tag "/dcaz3"), dca3[1]);                                          \
+  histos.fill(HIST(tag "/dcaxy1xdcaxy2"), dca1[0] * dca2[0]);                        \
+  histos.fill(HIST(tag "/dcaz1xdcaz2"), dca1[1] * dca2[1]);                          \
+  histos.fill(HIST(tag "/dcaxy3xdcaxy2"), dca3[0] * dca2[0]);                        \
+  histos.fill(HIST(tag "/dcaz3xdcaz2"), dca3[1] * dca2[1]);                          \
+  histos.fill(HIST(tag "/pt1"), track1.pt());                                        \
+  histos.fill(HIST(tag "/pt2"), track2.pt());                                        \
+  histos.fill(HIST(tag "/pt3"), track3.pt());
+
             if (issig) {
-              histos.fill(HIST("sig/decayradius"), r);
-              histos.fill(HIST("sig/decayradiusResoX"), secVtx[0] - vx);
-              histos.fill(HIST("sig/decayradiusResoY"), secVtx[1] - vy);
-              histos.fill(HIST("sig/decayradiusResoZ"), secVtx[2] - vz);
-              histos.fill(HIST("sig/decayradiusReso"), rmc);
-              histos.fill(HIST("sig/decaydca0"), TMath::Sqrt(fitter.getChi2AtPCACandidate(0)));
-              histos.fill(HIST("sig/decaydca1"), TMath::Sqrt(fitter.getChi2AtPCACandidate(1)));
-
-              histos.fill(HIST("sig/dcaxy1"), dca1[0]);
-              histos.fill(HIST("sig/dcaz1"), dca1[1]);
-              histos.fill(HIST("sig/dcaxy2"), dca2[0]);
-              histos.fill(HIST("sig/dcaz2"), dca2[1]);
-              histos.fill(HIST("sig/dcaxy3"), dca3[0]);
-              histos.fill(HIST("sig/dcaz3"), dca3[1]);
-
-              histos.fill(HIST("sig/dcaxy1xdcaxy2"), dca1[0] * dca2[0]);
-              histos.fill(HIST("sig/dcaz1xdcaz2"), dca1[1] * dca2[1]);
-
-              histos.fill(HIST("sig/dcaxy3xdcaxy2"), dca3[0] * dca2[0]);
-              histos.fill(HIST("sig/dcaz3xdcaz2"), dca3[1] * dca2[1]);
-
+              FillHistos("sig");
             } else {
-              histos.fill(HIST("bkg/decayradius"), r);
-              histos.fill(HIST("bkg/decayradiusResoX"), secVtx[0] - vx);
-              histos.fill(HIST("bkg/decayradiusResoY"), secVtx[1] - vy);
-              histos.fill(HIST("bkg/decayradiusResoZ"), secVtx[2] - vz);
-              histos.fill(HIST("bkg/decayradiusReso"), rmc);
-              histos.fill(HIST("bkg/decaydca0"), TMath::Sqrt(fitter.getChi2AtPCACandidate(0)));
-              histos.fill(HIST("bkg/decaydca1"), TMath::Sqrt(fitter.getChi2AtPCACandidate(1)));
-              histos.fill(HIST("bkg/dcaxy1"), dca1[0]);
-              histos.fill(HIST("bkg/dcaz1"), dca1[1]);
-              histos.fill(HIST("bkg/dcaxy2"), dca2[0]);
-              histos.fill(HIST("bkg/dcaz2"), dca2[1]);
-              histos.fill(HIST("bkg/dcaxy3"), dca3[0]);
-              histos.fill(HIST("bkg/dcaz3"), dca3[1]);
-
-              histos.fill(HIST("bkg/dcaxy1xdcaxy2"), dca1[0] * dca2[0]);
-              histos.fill(HIST("bkg/dcaz1xdcaz2"), dca1[1] * dca2[1]);
-
-              histos.fill(HIST("bkg/dcaxy3xdcaxy2"), dca3[0] * dca2[0]);
-              histos.fill(HIST("bkg/dcaz3xdcaz2"), dca3[1] * dca2[1]);
+              FillHistos("bkg");
             }
+#undef FillHistos
 
             // fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
           } //end if cascade recoed
