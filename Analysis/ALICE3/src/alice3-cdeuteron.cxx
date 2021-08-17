@@ -110,7 +110,9 @@ struct Alice3CDeuteron {
     histos.add("event/mcvtxX", "mcvtxX", kTH1D, {axisVtxX});
     histos.add("event/mcvtxY", "mcvtxY", kTH1D, {axisVtxY});
     histos.add("event/mcvtxZ", "mcvtxZ", kTH1D, {axisVtxZ});
-    histos.add("event/averageperdeuteron", "averageperdeuteron", kTH1D, {{1000, 0, 2000}});
+    histos.add("event/candperdeuteron", "candperdeuteron", kTH1D, {{1000, 0, 10000}});
+    histos.add("event/particles", "particles", kTH1D, {{3, 0.5, 3.5}});
+    histos.add("event/multiplicity", "multiplicity", kTH1D, {{1000, 0, 10000}});
 
 #define MakeHistos(tag)                                                                        \
   histos.add(tag "/cpa", "cpa" + tit, kTH1D, {axisCPA});                                       \
@@ -167,6 +169,18 @@ struct Alice3CDeuteron {
     // for (const auto& mcParticle : mcParticles) {
     //   // ParticlesOfInterest.push_back(mcParticle.globalIndex());
     // }
+    int ntrks = 0;
+    for (const auto& t : tracks) {
+      if (t.mcParticle().pdgCode() != 1000010020) {
+        histos.fill(HIST("event/particles"), 1);
+      } else if (t.mcParticle().pdgCode() != -321) {
+        histos.fill(HIST("event/particles"), 2);
+      } else if (t.mcParticle().pdgCode() != 211) {
+        histos.fill(HIST("event/particles"), 3);
+      }
+      ntrks++;
+    }
+    histos.fill(HIST("event/multiplicity"), ntrks);
 
     std::array<float, 2> dca1{1e10f, 1e10f};
     std::array<float, 2> dca2{1e10f, 1e10f};
@@ -355,7 +369,7 @@ struct Alice3CDeuteron {
           // fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
         } // End loop on pions
       }   // End loop on kaons
-      histos.fill(HIST("event/averageperdeuteron"), ncand);
+      histos.fill(HIST("event/candperdeuteron"), ncand);
     } // End loop on deuterons
   }
 };
