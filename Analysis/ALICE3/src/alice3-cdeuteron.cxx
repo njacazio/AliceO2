@@ -112,6 +112,10 @@ struct Alice3CDeuteron {
     histos.add("event/mcvtxZ", "mcvtxZ", kTH1D, {axisVtxZ});
     histos.add("event/candperdeuteron", "candperdeuteron", kTH1D, {{1000, 0, 10000}});
     histos.add("event/particles", "particles", kTH1D, {{3, 0.5, 3.5}});
+    hcut = histos.get<TH1>(HIST("event/particles"));
+    hcut->GetXaxis()->SetBinLabel(1, "d");
+    hcut->GetXaxis()->SetBinLabel(2, "K");
+    hcut->GetXaxis()->SetBinLabel(3, "#pi");
     histos.add("event/multiplicity", "multiplicity", kTH1D, {{1000, 0, 10000}});
 
 #define MakeHistos(tag)                                                                        \
@@ -171,11 +175,11 @@ struct Alice3CDeuteron {
     // }
     int ntrks = 0;
     for (const auto& t : tracks) {
-      if (t.mcParticle().pdgCode() != 1000010020) {
+      if (t.mcParticle().pdgCode() == 1000010020) {
         histos.fill(HIST("event/particles"), 1);
-      } else if (t.mcParticle().pdgCode() != -321) {
+      } else if (t.mcParticle().pdgCode() == -321) {
         histos.fill(HIST("event/particles"), 2);
-      } else if (t.mcParticle().pdgCode() != 211) {
+      } else if (t.mcParticle().pdgCode() == 211) {
         histos.fill(HIST("event/particles"), 3);
       }
       ntrks++;
