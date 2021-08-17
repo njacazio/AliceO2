@@ -57,11 +57,23 @@ struct Alice3CDeuteron {
     const AxisSpec axisDecayRadiusReso{2000, -0.01, 0.01, "Decay radius resolution"};
     const AxisSpec axisDca{5000, -0.01, 0.01, "DCA to secondary"};
     const AxisSpec axisDcaXY{5000, -0.05, 0.05, "DCA_{xy}"};
+    const AxisSpec axisDcaXYProd{5000, -5e-6, 5e-6, "DCA_{xy} product"};
     const AxisSpec axisDcaZ{5000, -0.05, 0.05, "DCA_{z}"};
+    const AxisSpec axisDcaZProd{5000, -5e-6, 5e-6, "DCA_{z} product"};
     const AxisSpec axisPt{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec axisVtxX{100, -0.1, 0.1, "Vtx_{X}"};
+    const AxisSpec axisVtxY{100, -0.1, 0.1, "Vtx_{Y}"};
+    const AxisSpec axisVtxZ{100, -0.1, 0.1, "Vtx_{Z}"};
     const TString tit = Form(" [%.6f, %.6f] R [%.6f, %.6f] DCA ",
                              minRadius.value, maxRadius.value,
                              minDca.value, maxDca.value);
+
+    histos.add("event/vtxX", "vtxX", kTH1D, {axisVtxX});
+    histos.add("event/vtxY", "vtxY", kTH1D, {axisVtxY});
+    histos.add("event/vtxZ", "vtxZ", kTH1D, {axisVtxY});
+    histos.add("event/mcvtxX", "mcvtxX", kTH1D, {axisVtxX});
+    histos.add("event/mcvtxY", "mcvtxY", kTH1D, {axisVtxY});
+    histos.add("event/mcvtxZ", "mcvtxZ", kTH1D, {axisVtxY});
 
 #define MakeHistos(tag)                                                                        \
   histos.add(tag "/invmass", "invmass" + tit, kTH1D, {axisInvMass});                           \
@@ -75,19 +87,23 @@ struct Alice3CDeuteron {
   histos.add(tag "/dcaxy1", "dcaxy1 Deuteron" + tit, kTH1D, {axisDcaXY});                      \
   histos.add(tag "/dcaxy2", "dcaxy2 Kaon" + tit, kTH1D, {axisDcaXY});                          \
   histos.add(tag "/dcaxy3", "dcaxy3 Pion" + tit, kTH1D, {axisDcaXY});                          \
-  histos.add(tag "/dcaxy1xdcaxy2", "dcaxy1xdcaxy2" + tit, kTH1D, {axisDcaXY});                 \
-  histos.add(tag "/dcaxy3xdcaxy2", "dcaxy3xdcaxy2" + tit, kTH1D, {axisDcaXY});                 \
+  histos.add(tag "/dcaxy1xdcaxy2", "dcaxy1xdcaxy2" + tit, kTH1D, {axisDcaXYProd});             \
+  histos.add(tag "/dcaxy3xdcaxy2", "dcaxy3xdcaxy2" + tit, kTH1D, {axisDcaXYProd});             \
   histos.add(tag "/dcaz1", "dcaz1 Deuteron" + tit, kTH1D, {axisDcaZ});                         \
   histos.add(tag "/dcaz2", "dcaz2 Kaon" + tit, kTH1D, {axisDcaZ});                             \
   histos.add(tag "/dcaz3", "dcaz3 Pion" + tit, kTH1D, {axisDcaZ});                             \
-  histos.add(tag "/dcaz1xdcaz2", "dcaz1xdcaz2" + tit, kTH1D, {axisDcaZ});                      \
-  histos.add(tag "/dcaz3xdcaz2", "dcaz3xdcaz2" + tit, kTH1D, {axisDcaZ});                      \
+  histos.add(tag "/dcaz1xdcaz2", "dcaz1xdcaz2" + tit, kTH1D, {axisDcaZProd});                  \
+  histos.add(tag "/dcaz3xdcaz2", "dcaz3xdcaz2" + tit, kTH1D, {axisDcaZProd});                  \
   histos.add(tag "/pt1", "pt1 Deuteron" + tit, kTH1D, {axisPt});                               \
   histos.add(tag "/pt2", "pt2 Kaon" + tit, kTH1D, {axisPt});                                   \
   histos.add(tag "/pt3", "pt3 Pion" + tit, kTH1D, {axisPt});
 
     MakeHistos("sig");
     MakeHistos("bkg");
+    MakeHistos("signocut");
+    MakeHistos("bkgnocut");
+    MakeHistos("sigcut");
+    MakeHistos("bkgcut");
 
 #undef MakeHistos
   }
@@ -97,6 +113,16 @@ struct Alice3CDeuteron {
                const soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels, o2::aod::TracksExtra, o2::aod::TracksCov>& tracks,
                const aod::McParticles& mcParticles)
   {
+
+    histos.fill(HIST("event/vtxX"), coll.posX());
+    histos.fill(HIST("event/vtxY"), coll.posY());
+    histos.fill(HIST("event/vtxZ"), coll.posZ());
+    histos.fill(HIST("event/mcvtxX"), coll.mcCollision().posX());
+    histos.fill(HIST("event/mcvtxY"), coll.mcCollision().posY());
+    histos.fill(HIST("event/mcvtxZ"), coll.mcCollision().posZ());
+    const math_utils::Point3D<float> collPos{coll.posX(),
+                                               coll.posY(),
+                                               coll.posZ()};
     for (const auto& mcParticle : mcParticles) {
       // ParticlesOfInterest.push_back(mcParticle.globalIndex());
     }
@@ -111,9 +137,7 @@ struct Alice3CDeuteron {
       if (track1.mcParticle().pdgCode() != 1000010020) {
         continue;
       }
-      if (!getTrackPar(track1).propagateParamToDCA({coll.posX(),
-                                                    coll.posY(),
-                                                    coll.posZ()},
+      if (!getTrackPar(track1).propagateParamToDCA(collPos,
                                                    magField * 10.f, &dca1, 100.)) {
         continue;
       }
@@ -135,9 +159,7 @@ struct Alice3CDeuteron {
         if (track2.pt() < minKaonPt) {
           iscut = true;
         }
-        if (!getTrackPar(track2).propagateParamToDCA({coll.posX(),
-                                                      coll.posY(),
-                                                      coll.posZ()},
+        if (!getTrackPar(track2).propagateParamToDCA(collPos,
                                                      magField * 10.f, &dca2, 100.)) {
           continue;
         }
@@ -163,9 +185,7 @@ struct Alice3CDeuteron {
           if (track3.pt() < minPionPt) {
             iscut = true;
           }
-          if (!getTrackPar(track3).propagateParamToDCA({coll.posX(),
-                                                        coll.posY(),
-                                                        coll.posZ()},
+          if (!getTrackPar(track3).propagateParamToDCA(collPos,
                                                        magField * 10.f, &dca3, 100.)) {
             continue;
           }
@@ -261,6 +281,20 @@ struct Alice3CDeuteron {
   histos.fill(HIST(tag "/pt1"), track1.pt());                                        \
   histos.fill(HIST(tag "/pt2"), track2.pt());                                        \
   histos.fill(HIST(tag "/pt3"), track3.pt());
+
+            if (issig) {
+              FillHistos("signocut");
+            } else {
+              FillHistos("bkgnocut");
+            }
+            if (iscut) {
+              if (issig) {
+                FillHistos("sigcut");
+              } else {
+                FillHistos("bkgcut");
+              }
+              continue;
+            }
 
             if (issig) {
               FillHistos("sig");
