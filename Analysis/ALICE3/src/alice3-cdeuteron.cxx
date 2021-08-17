@@ -65,7 +65,7 @@ struct Alice3CDeuteron {
     const AxisSpec axisVtxX{100, -0.1, 0.1, "Vtx_{X}"};
     const AxisSpec axisVtxY{100, -0.1, 0.1, "Vtx_{Y}"};
     const AxisSpec axisVtxZ{100, -0.1, 0.1, "Vtx_{Z}"};
-    const AxisSpec axisCPA{2000, 0, 1.1, "CPA"};
+    const AxisSpec axisCPA{4000, -1.1, 1.1, "CPA"};
     const TString tit = Form(" [%.6f, %.6f] R [%.6f, %.6f] DCA ",
                              minRadius.value, maxRadius.value,
                              minDca.value, maxDca.value);
@@ -106,10 +106,11 @@ struct Alice3CDeuteron {
 
     histos.add("event/vtxX", "vtxX", kTH1D, {axisVtxX});
     histos.add("event/vtxY", "vtxY", kTH1D, {axisVtxY});
-    histos.add("event/vtxZ", "vtxZ", kTH1D, {axisVtxY});
+    histos.add("event/vtxZ", "vtxZ", kTH1D, {axisVtxZ});
     histos.add("event/mcvtxX", "mcvtxX", kTH1D, {axisVtxX});
     histos.add("event/mcvtxY", "mcvtxY", kTH1D, {axisVtxY});
-    histos.add("event/mcvtxZ", "mcvtxZ", kTH1D, {axisVtxY});
+    histos.add("event/mcvtxZ", "mcvtxZ", kTH1D, {axisVtxZ});
+    histos.add("event/averageperdeuteron", "averageperdeuteron", kTH1D, {{1000, 0, 2000}});
 
 #define MakeHistos(tag)                                                                        \
   histos.add(tag "/cpa", "cpa" + tit, kTH1D, {axisCPA});                                       \
@@ -157,18 +158,22 @@ struct Alice3CDeuteron {
     histos.fill(HIST("event/mcvtxX"), coll.mcCollision().posX());
     histos.fill(HIST("event/mcvtxY"), coll.mcCollision().posY());
     histos.fill(HIST("event/mcvtxZ"), coll.mcCollision().posZ());
-    const math_utils::Point3D<float> collPos{coll.posX(),
-                                             coll.posY(),
-                                             coll.posZ()};
-    for (const auto& mcParticle : mcParticles) {
-      // ParticlesOfInterest.push_back(mcParticle.globalIndex());
-    }
+    const math_utils::Point3D<float> collPos{coll.mcCollision().posX(),
+                                             coll.mcCollision().posY(),
+                                             coll.mcCollision().posZ()};
+    // const math_utils::Point3D<float> collPos{coll.posX(),
+    //                                          coll.posY(),
+    //                                          coll.posZ()};
+    // for (const auto& mcParticle : mcParticles) {
+    //   // ParticlesOfInterest.push_back(mcParticle.globalIndex());
+    // }
 
     std::array<float, 2> dca1{1e10f, 1e10f};
     std::array<float, 2> dca2{1e10f, 1e10f};
     std::array<float, 2> dca3{1e10f, 1e10f};
     for (const auto& track1 : tracks) {
       const auto index1 = track1.globalIndex();
+      int ncand = 0;
       if (track1.mcParticle().pdgCode() != 1000010020) {
         continue;
       }
@@ -262,42 +267,45 @@ struct Alice3CDeuteron {
             continue;
           }
           const int status = fitter.process(pc1, pc2, pc3);
-          if (status != 0) {
+          if (status == 0) {
+            continue;
+          }
 
-            TLorentzVector v1{};
-            v1.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi(), 1.8756129);
+          TLorentzVector v1{};
+          v1.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi(), 1.8756129);
 
-            TLorentzVector v2{};
-            v2.SetPtEtaPhiM(track2.pt(), track2.eta(), track2.phi(), 0.493677);
+          TLorentzVector v2{};
+          v2.SetPtEtaPhiM(track2.pt(), track2.eta(), track2.phi(), 0.493677);
 
-            TLorentzVector v3{};
-            v3.SetPtEtaPhiM(track3.pt(), track3.eta(), track3.phi(), 0.139570);
-            v1 += v2;
-            v1 += v3;
-            if (v1.Pt() < minMomPt) {
-              iscut = true;
-            }
+          TLorentzVector v3{};
+          v3.SetPtEtaPhiM(track3.pt(), track3.eta(), track3.phi(), 0.139570);
+          v1 += v2;
+          v1 += v3;
+          if (v1.Pt() < minMomPt) {
+            iscut = true;
+          }
 
-            // fitter.propagateTracksToVertex();
-            const auto& secVtx = fitter.getPCACandidate();
-            const float decay_radius = sqrt(secVtx[0] * secVtx[0] + secVtx[1] * secVtx[1] + secVtx[2] * secVtx[2]);
-            if (decay_radius < minRadius) {
-              iscut = true;
-            }
-            if (decay_radius > maxRadius) {
-              iscut = true;
-            }
+          // fitter.propagateTracksToVertex();
+          const auto& secVtx = fitter.getPCACandidate();
+          const float decay_radius = sqrt(secVtx[0] * secVtx[0] + secVtx[1] * secVtx[1] + secVtx[2] * secVtx[2]);
+          if (decay_radius < minRadius) {
+            iscut = true;
+          }
+          if (decay_radius > maxRadius) {
+            iscut = true;
+          }
 
-            const float magMom = sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
-            const float CPA = (v1.Px() * secVtx[0] + v1.Py() * secVtx[1] + v1.Pz() * secVtx[2]) / (decay_radius * magMom);
-            if (CPA < minCpa) {
-              iscut = true;
-            }
+          const float magMom = sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+          const float CPA = (v1.Px() * secVtx[0] + v1.Py() * secVtx[1] + v1.Pz() * secVtx[2]) / (decay_radius * magMom);
+          if (abs(CPA) < minCpa) {
+            iscut = true;
+          }
 
-            const float vx = mother1.vx();
-            const float vy = mother1.vy();
-            const float vz = mother1.vz();
-            const float rmc = sqrt((secVtx[0] - vx) * (secVtx[0] - vx) + (secVtx[1] - vy) * (secVtx[1] - vy) + (secVtx[2] - vz) * (secVtx[2] - vz));
+          const float vx = mother1.vx();
+          const float vy = mother1.vy();
+          const float vz = mother1.vz();
+          const float rmc = sqrt((secVtx[0] - vx) * (secVtx[0] - vx) + (secVtx[1] - vy) * (secVtx[1] - vy) + (secVtx[2] - vz) * (secVtx[2] - vz));
+          ncand++;
 
 #define FillHistos(tag)                                                              \
   histos.fill(HIST(tag "/cpa"), CPA);                                                \
@@ -323,32 +331,32 @@ struct Alice3CDeuteron {
   histos.fill(HIST(tag "/pt2"), track2.pt());                                        \
   histos.fill(HIST(tag "/pt3"), track3.pt());
 
+          if (issig) {
+            FillHistos("signocut");
+          } else {
+            FillHistos("bkgnocut");
+          }
+          if (iscut) {
             if (issig) {
-              FillHistos("signocut");
+              FillHistos("sigcut");
             } else {
-              FillHistos("bkgnocut");
+              FillHistos("bkgcut");
             }
-            if (iscut) {
-              if (issig) {
-                FillHistos("sigcut");
-              } else {
-                FillHistos("bkgcut");
-              }
-              continue;
-            }
+            continue;
+          }
 
-            if (issig) {
-              FillHistos("sig");
-            } else {
-              FillHistos("bkg");
-            }
+          if (issig) {
+            FillHistos("sig");
+          } else {
+            FillHistos("bkg");
+          }
 #undef FillHistos
 
-            // fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
-          } //end if cascade recoed
-        }
-      }
-    }
+          // fitterCasc.getTrack(1).getPxPyPzGlo(pvecbach);
+        } // End loop on pions
+      }   // End loop on kaons
+      histos.fill(HIST("event/averageperdeuteron"), ncand);
+    } // End loop on deuterons
   }
 };
 
