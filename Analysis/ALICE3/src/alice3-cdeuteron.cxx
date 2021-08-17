@@ -29,14 +29,15 @@ using namespace o2::framework::expressions;
 
 struct Alice3CDeuteron {
   Configurable<float> magField{"magField", 0.5, "Magnetic field"};
-  Configurable<float> minRadius{"minRadius", 0, "Minimum decay radius"};
-  Configurable<float> maxRadius{"maxRadius", 0.1, "Maximum decay radius"};
-  Configurable<float> minMomPt{"minMomPt", 0.0, "Minimum pT of the mother"};
-  Configurable<float> minKaonPt{"minKaonPt", 0.0, "Minimum pT of the pion daughter"};
-  Configurable<float> minPionPt{"minPionPt", 0.0, "Minimum pT of the kaon daughter"};
+  Configurable<float> minRadius{"minRadius", -100, "Minimum decay radius"};
+  Configurable<float> maxRadius{"maxRadius", 100, "Maximum decay radius"};
+  Configurable<float> minMomPt{"minMomPt", -100, "Minimum pT of the mother"};
+  Configurable<float> minKaonPt{"minKaonPt", -100, "Minimum pT of the pion daughter"};
+  Configurable<float> minPionPt{"minPionPt", -100, "Minimum pT of the kaon daughter"};
   Configurable<float> minVtxContrib{"minVtxContrib", 3, "Minimum number of contributors to the primary vertex"};
-  Configurable<float> minDca{"minDca", 0.0001, "Minimum track DCA to the primary vertex"};
-  Configurable<float> maxDca{"maxDca", 0.001, "Maximum track DCA to the primary vertex"};
+  Configurable<float> minDca{"minDca", -100, "Minimum track DCA to the primary vertex"};
+  Configurable<float> maxDca{"maxDca", 100, "Maximum track DCA to the primary vertex"};
+  Configurable<float> minCpa{"minCpa", 0, "Minimum CPA"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   o2::vertexing::DCAFitterN<3> fitter;
 
@@ -64,9 +65,44 @@ struct Alice3CDeuteron {
     const AxisSpec axisVtxX{100, -0.1, 0.1, "Vtx_{X}"};
     const AxisSpec axisVtxY{100, -0.1, 0.1, "Vtx_{Y}"};
     const AxisSpec axisVtxZ{100, -0.1, 0.1, "Vtx_{Z}"};
+    const AxisSpec axisCPA{2000, 0, 1.1, "CPA"};
     const TString tit = Form(" [%.6f, %.6f] R [%.6f, %.6f] DCA ",
                              minRadius.value, maxRadius.value,
                              minDca.value, maxDca.value);
+
+    histos.add("event/candcuts", "cuts", kTH1D, {{10, 0, 10}});
+    auto hcut = histos.get<TH1>(HIST("event/candcuts"));
+    hcut->GetXaxis()->SetBinLabel(1, "magField");
+    hcut->GetXaxis()->SetBinLabel(2, "minRadius");
+    hcut->GetXaxis()->SetBinLabel(3, "maxRadius");
+    hcut->GetXaxis()->SetBinLabel(4, "minMomPt");
+    hcut->GetXaxis()->SetBinLabel(5, "minKaonPt");
+    hcut->GetXaxis()->SetBinLabel(6, "minPionPt");
+    hcut->GetXaxis()->SetBinLabel(7, "minVtxContrib");
+    hcut->GetXaxis()->SetBinLabel(8, "minDca");
+    hcut->GetXaxis()->SetBinLabel(9, "maxDca");
+
+    histos.add("event/cuts", "cuts", kTH1D, {{10, 0, 10}});
+    hcut = histos.get<TH1>(HIST("event/cuts"));
+    hcut->GetXaxis()->SetBinLabel(1, "magField");
+    hcut->GetXaxis()->SetBinLabel(2, "minRadius");
+    hcut->GetXaxis()->SetBinLabel(3, "maxRadius");
+    hcut->GetXaxis()->SetBinLabel(4, "minMomPt");
+    hcut->GetXaxis()->SetBinLabel(5, "minKaonPt");
+    hcut->GetXaxis()->SetBinLabel(6, "minPionPt");
+    hcut->GetXaxis()->SetBinLabel(7, "minVtxContrib");
+    hcut->GetXaxis()->SetBinLabel(8, "minDca");
+    hcut->GetXaxis()->SetBinLabel(9, "maxDca");
+
+    hcut->SetBinContent(1, magField);
+    hcut->SetBinContent(2, minRadius);
+    hcut->SetBinContent(3, maxRadius);
+    hcut->SetBinContent(4, minMomPt);
+    hcut->SetBinContent(5, minKaonPt);
+    hcut->SetBinContent(6, minPionPt);
+    hcut->SetBinContent(7, minVtxContrib);
+    hcut->SetBinContent(8, minDca);
+    hcut->SetBinContent(9, maxDca);
 
     histos.add("event/vtxX", "vtxX", kTH1D, {axisVtxX});
     histos.add("event/vtxY", "vtxY", kTH1D, {axisVtxY});
@@ -76,6 +112,7 @@ struct Alice3CDeuteron {
     histos.add("event/mcvtxZ", "mcvtxZ", kTH1D, {axisVtxY});
 
 #define MakeHistos(tag)                                                                        \
+  histos.add(tag "/cpa", "cpa" + tit, kTH1D, {axisCPA});                                       \
   histos.add(tag "/invmass", "invmass" + tit, kTH1D, {axisInvMass});                           \
   histos.add(tag "/decayradius", "decayradius" + tit, kTH1D, {axisDecayRadius});               \
   histos.add(tag "/decayradiusResoX", "decayradiusResoX" + tit, kTH1D, {axisDecayRadiusReso}); \
@@ -121,8 +158,8 @@ struct Alice3CDeuteron {
     histos.fill(HIST("event/mcvtxY"), coll.mcCollision().posY());
     histos.fill(HIST("event/mcvtxZ"), coll.mcCollision().posZ());
     const math_utils::Point3D<float> collPos{coll.posX(),
-                                               coll.posY(),
-                                               coll.posZ()};
+                                             coll.posY(),
+                                             coll.posZ()};
     for (const auto& mcParticle : mcParticles) {
       // ParticlesOfInterest.push_back(mcParticle.globalIndex());
     }
@@ -130,9 +167,7 @@ struct Alice3CDeuteron {
     std::array<float, 2> dca1{1e10f, 1e10f};
     std::array<float, 2> dca2{1e10f, 1e10f};
     std::array<float, 2> dca3{1e10f, 1e10f};
-    bool iscut = false;
     for (const auto& track1 : tracks) {
-      iscut = false;
       const auto index1 = track1.globalIndex();
       if (track1.mcParticle().pdgCode() != 1000010020) {
         continue;
@@ -142,12 +177,6 @@ struct Alice3CDeuteron {
         continue;
       }
 
-      if (abs(dca1[0]) < minDca || abs(dca1[1]) < minDca) {
-        iscut = true;
-      }
-      if (abs(dca1[0]) > maxDca || abs(dca1[1]) > maxDca) {
-        iscut = true;
-      }
       for (const auto& track2 : tracks) {
         const auto index2 = track2.globalIndex();
         if (index1 == index2) {
@@ -156,22 +185,14 @@ struct Alice3CDeuteron {
         if (track2.mcParticle().pdgCode() != -321) {
           continue;
         }
-        if (track2.pt() < minKaonPt) {
-          iscut = true;
-        }
+
         if (!getTrackPar(track2).propagateParamToDCA(collPos,
                                                      magField * 10.f, &dca2, 100.)) {
           continue;
         }
 
-        if (abs(dca2[0]) < minDca || abs(dca2[1]) < minDca) {
-          iscut = true;
-        }
-        if (abs(dca2[0]) > maxDca || abs(dca2[1]) > maxDca) {
-          iscut = true;
-        }
-
         for (const auto& track3 : tracks) {
+
           const auto index3 = track3.globalIndex();
           if (index2 == index3) {
             continue;
@@ -181,6 +202,23 @@ struct Alice3CDeuteron {
           }
           if (track3.mcParticle().pdgCode() != 211) {
             continue;
+          }
+          bool iscut = false;
+          if (abs(dca1[0]) < minDca || abs(dca1[1]) < minDca) {
+            iscut = true;
+          }
+          if (abs(dca1[0]) > maxDca || abs(dca1[1]) > maxDca) {
+            iscut = true;
+          }
+
+          if (abs(dca2[0]) < minDca || abs(dca2[1]) < minDca) {
+            iscut = true;
+          }
+          if (abs(dca2[0]) > maxDca || abs(dca2[1]) > maxDca) {
+            iscut = true;
+          }
+          if (track2.pt() < minKaonPt) {
+            iscut = true;
           }
           if (track3.pt() < minPionPt) {
             iscut = true;
@@ -239,19 +277,20 @@ struct Alice3CDeuteron {
             if (v1.Pt() < minMomPt) {
               iscut = true;
             }
-            if (issig) {
-              histos.fill(HIST("sig/invmass"), v1.M());
-            } else {
-              histos.fill(HIST("bkg/invmass"), v1.M());
-            }
 
             // fitter.propagateTracksToVertex();
             const auto& secVtx = fitter.getPCACandidate();
-            const float r = sqrt(secVtx[0] * secVtx[0] + secVtx[1] * secVtx[1] + secVtx[2] * secVtx[2]);
-            if (r < minRadius) {
+            const float decay_radius = sqrt(secVtx[0] * secVtx[0] + secVtx[1] * secVtx[1] + secVtx[2] * secVtx[2]);
+            if (decay_radius < minRadius) {
               iscut = true;
             }
-            if (r > maxRadius) {
+            if (decay_radius > maxRadius) {
+              iscut = true;
+            }
+
+            const float magMom = sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
+            const float CPA = (v1.Px() * secVtx[0] + v1.Py() * secVtx[1] + v1.Pz() * secVtx[2]) / (decay_radius * magMom);
+            if (CPA < minCpa) {
               iscut = true;
             }
 
@@ -261,7 +300,9 @@ struct Alice3CDeuteron {
             const float rmc = sqrt((secVtx[0] - vx) * (secVtx[0] - vx) + (secVtx[1] - vy) * (secVtx[1] - vy) + (secVtx[2] - vz) * (secVtx[2] - vz));
 
 #define FillHistos(tag)                                                              \
-  histos.fill(HIST(tag "/decayradius"), r);                                          \
+  histos.fill(HIST(tag "/cpa"), CPA);                                                \
+  histos.fill(HIST(tag "/invmass"), v1.M());                                         \
+  histos.fill(HIST(tag "/decayradius"), decay_radius);                               \
   histos.fill(HIST(tag "/decayradiusResoX"), secVtx[0] - vx);                        \
   histos.fill(HIST(tag "/decayradiusResoY"), secVtx[1] - vy);                        \
   histos.fill(HIST(tag "/decayradiusResoZ"), secVtx[2] - vz);                        \
