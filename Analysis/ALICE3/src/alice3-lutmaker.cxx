@@ -185,9 +185,9 @@ struct Alice3LutMaker {
     histos.add("QA/CovMat_c1Pt21Pt2", "c1Pt21Pt2" + commonTitle, kTH3F, {axisPt, axisEta, axisc1Pt21Pt2});
   }
 
-  void process(const aod::McCollision& collision,
+  void process(const soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator& coll,
                const soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels>& tracks,
-               const aod::McParticles& mcParticles)
+               const aod::McParticles& mcParticles, const o2::aod::McCollisions&)
   {
     std::vector<int64_t> recoTracks(tracks.size());
     int ntrks = 0;
