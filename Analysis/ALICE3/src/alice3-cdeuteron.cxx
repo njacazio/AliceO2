@@ -36,6 +36,7 @@ struct Alice3CDeuteron {
   Configurable<float> minPionPt{"minPionPt", -100, "Minimum pT of the kaon daughter"};
   Configurable<float> minVtxContrib{"minVtxContrib", 3, "Minimum number of contributors to the primary vertex"};
   Configurable<float> minDca{"minDca", -100, "Minimum track DCA to the primary vertex"};
+  Configurable<float> minDcaPion{"minDcaPion", -100, "Minimum DCA of the pion to the primary vertex"};
   Configurable<float> maxDca{"maxDca", 100, "Maximum track DCA to the primary vertex"};
   Configurable<float> minCpa{"minCpa", 0, "Minimum CPA"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -56,6 +57,7 @@ struct Alice3CDeuteron {
     const AxisSpec axisInvMass{100, 2.5, 4, "Inv. Mass_{c-d}"};
     const AxisSpec axisDecayRadius{2000, 0, 0.1, "Decay radius"};
     const AxisSpec axisDecayRadiusReso{2000, -0.01, 0.01, "Decay radius resolution"};
+    const AxisSpec axisPionProdRadiusXY{2000, 0, 0.001, "Pion production radius in xy"};
     const AxisSpec axisDca{5000, -0.01, 0.01, "DCA to secondary"};
     const AxisSpec axisDcaXY{5000, -0.05, 0.05, "DCA_{xy}"};
     const AxisSpec axisDcaXYProd{5000, -5e-6, 5e-6, "DCA_{xy} product"};
@@ -126,6 +128,7 @@ struct Alice3CDeuteron {
   histos.add(tag "/decayradiusResoY", "decayradiusResoY" + tit, kTH1D, {axisDecayRadiusReso}); \
   histos.add(tag "/decayradiusResoZ", "decayradiusResoZ" + tit, kTH1D, {axisDecayRadiusReso}); \
   histos.add(tag "/decayradiusReso", "decayradiusReso" + tit, kTH1D, {axisDecayRadiusReso});   \
+  histos.add(tag "/radius3xy", "radius3xy" + tit, kTH1D, {axisPionProdRadiusXY});              \
   histos.add(tag "/decaydca0", "decaydca0" + tit, kTH1D, {axisDca});                           \
   histos.add(tag "/decaydca1", "decaydca1" + tit, kTH1D, {axisDca});                           \
   histos.add(tag "/dcaxy1", "dcaxy1 Deuteron" + tit, kTH1D, {axisDcaXY});                      \
@@ -140,7 +143,9 @@ struct Alice3CDeuteron {
   histos.add(tag "/dcaz3xdcaz2", "dcaz3xdcaz2" + tit, kTH1D, {axisDcaZProd});                  \
   histos.add(tag "/pt1", "pt1 Deuteron" + tit, kTH1D, {axisPt});                               \
   histos.add(tag "/pt2", "pt2 Kaon" + tit, kTH1D, {axisPt});                                   \
-  histos.add(tag "/pt3", "pt3 Pion" + tit, kTH1D, {axisPt});
+  histos.add(tag "/pt3", "pt3 Pion" + tit, kTH1D, {axisPt});                                   \
+  histos.add(tag "/ptmom", "ptmom" + tit, kTH1D, {axisPt});                                    \
+  histos.add(tag "/pmom", "pmom" + tit, kTH1D, {axisPt});
 
     MakeHistos("sig");
     MakeHistos("bkg");
@@ -240,6 +245,9 @@ struct Alice3CDeuteron {
           if (abs(dca2[0]) > maxDca || abs(dca2[1]) > maxDca) {
             iscut = true;
           }
+          if (abs(dca2[0]) < minDcaPion || abs(dca2[1]) < minDcaPion) {
+            iscut = true;
+          }
           if (track2.pt() < minKaonPt) {
             iscut = true;
           }
@@ -324,6 +332,8 @@ struct Alice3CDeuteron {
           const float vz = mother1.vz();
           const float rmc = sqrt((secVtx[0] - vx) * (secVtx[0] - vx) + (secVtx[1] - vy) * (secVtx[1] - vy) + (secVtx[2] - vz) * (secVtx[2] - vz));
           ncand++;
+          const float radius3xy = sqrt((track3.mcParticle().vx() - coll.mcCollision().posX()) * (track3.mcParticle().vx() - coll.mcCollision().posX()) +
+                                       (track3.mcParticle().vy() - coll.mcCollision().posY()) * (track3.mcParticle().vy() - coll.mcCollision().posY()));
 
 #define FillHistos(tag)                                                              \
   histos.fill(HIST(tag "/cpa"), CPA);                                                \
@@ -332,6 +342,7 @@ struct Alice3CDeuteron {
   histos.fill(HIST(tag "/decayradiusResoX"), secVtx[0] - vx);                        \
   histos.fill(HIST(tag "/decayradiusResoY"), secVtx[1] - vy);                        \
   histos.fill(HIST(tag "/decayradiusResoZ"), secVtx[2] - vz);                        \
+  histos.fill(HIST(tag "/radius3xy"), radius3xy);                                    \
   histos.fill(HIST(tag "/decayradiusReso"), rmc);                                    \
   histos.fill(HIST(tag "/decaydca0"), TMath::Sqrt(fitter.getChi2AtPCACandidate(0))); \
   histos.fill(HIST(tag "/decaydca1"), TMath::Sqrt(fitter.getChi2AtPCACandidate(1))); \
@@ -347,7 +358,9 @@ struct Alice3CDeuteron {
   histos.fill(HIST(tag "/dcaz3xdcaz2"), dca3[1] * dca2[1]);                          \
   histos.fill(HIST(tag "/pt1"), track1.pt());                                        \
   histos.fill(HIST(tag "/pt2"), track2.pt());                                        \
-  histos.fill(HIST(tag "/pt3"), track3.pt());
+  histos.fill(HIST(tag "/pt3"), track3.pt());                                        \
+  histos.fill(HIST(tag "/ptmom"), v1.Pt());                                          \
+  histos.fill(HIST(tag "/pmom"), v1.P());
 
           if (issig) {
             FillHistos("signocut");
