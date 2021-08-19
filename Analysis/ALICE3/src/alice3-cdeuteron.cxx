@@ -57,7 +57,7 @@ struct Alice3CDeuteron {
     const AxisSpec axisInvMass{100, 2.5, 4, "Inv. Mass_{c-d}"};
     const AxisSpec axisDecayRadius{2000, 0, 0.1, "Decay radius"};
     const AxisSpec axisDecayRadiusReso{2000, -0.01, 0.01, "Decay radius resolution"};
-    const AxisSpec axisPionProdRadiusXY{2000, 0, 0.001, "Pion production radius in xy"};
+    const AxisSpec axisPionProdRadiusXY{2000, 0, 0.01, "Pion production radius in xy"};
     const AxisSpec axisDca{5000, -0.01, 0.01, "DCA to secondary"};
     const AxisSpec axisDcaXY{5000, -0.05, 0.05, "DCA_{xy}"};
     const AxisSpec axisDcaXYProd{5000, -5e-6, 5e-6, "DCA_{xy} product"};

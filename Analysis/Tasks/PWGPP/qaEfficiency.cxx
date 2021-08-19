@@ -186,28 +186,28 @@ struct QaTrackingEfficiency {
       makeEfficiency2D("efficiencyVsPtVsEta", Form("Efficiency %s #it{#varphi} [%.2f,%.2f] Prim %i;%s;%s;Efficiency", o2::track::pid_constants::sNames[particle], phiMin.value, phiMax.value, selPrim.value, "#it{p}_{T} (GeV/#it{c})", "#it{#eta}"), HIST("pt/num"), HIST("eta/num"));
     }
   }
-
-  void process(const o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>& collisions,
-               const o2::soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels>& tracks,
-               const o2::aod::McCollisions& mcCollisions,
-               const o2::aod::McParticles& mcParticles)
+  int nev = 0;
+  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>::iterator const& collision,
+               o2::soa::Join<o2::aod::Tracks, o2::aod::McTrackLabels> const& tracks,
+               o2::aod::McCollisions const&,
+               o2::aod::McParticles const& mcParticles)
   {
-
-    std::vector<int64_t> recoEvt(collisions.size());
+    Printf("Event %i has %llu tracks and %llu particles", nev++, tracks.size(), mcParticles.size());
+    std::vector<int64_t> recoEvt(1); //collisions.size());
     int nevts = 0;
-    for (const auto& collision : collisions) {
-      histos.fill(HIST("eventSelection"), 1);
-      if (collision.numContrib() < nMinNumberOfContributors) {
-        continue;
-      }
-      histos.fill(HIST("eventSelection"), 2);
-      const auto mcCollision = collision.mcCollision();
-      if ((mcCollision.posZ() < vertexZMin || mcCollision.posZ() > vertexZMax)) {
-        continue;
-      }
-      histos.fill(HIST("eventSelection"), 3);
-      recoEvt[nevts++] = mcCollision.globalIndex();
+    // for (const auto& collision : collisions) {
+    histos.fill(HIST("eventSelection"), 1);
+    if (collision.numContrib() < nMinNumberOfContributors) {
+      return;
     }
+    histos.fill(HIST("eventSelection"), 2);
+    const auto mcCollision = collision.mcCollision();
+    if ((mcCollision.posZ() < vertexZMin || mcCollision.posZ() > vertexZMax)) {
+      return;
+    }
+    histos.fill(HIST("eventSelection"), 3);
+    recoEvt[nevts++] = mcCollision.globalIndex();
+    // }
     recoEvt.resize(nevts);
 
     auto rejectParticle = [&](const auto& p, auto h) {
