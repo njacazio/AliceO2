@@ -183,8 +183,8 @@ void AODProducerWorkflowDPL::addToTracksExtraTable(TracksExtraCursorType& tracks
                     truncateFloatFraction(extraInfoHolder.tofExpMom, mTrack1Pt),
                     truncateFloatFraction(extraInfoHolder.trackEtaEMCAL, mTrackPosEMCAL),
                     truncateFloatFraction(extraInfoHolder.trackPhiEMCAL, mTrackPosEMCAL),
-                    0,
-                    0);
+                    extraInfoHolder.trackTime,
+                    extraInfoHolder.trackTimeRes);
 }
 
 template <typename mftTracksCursorType>
@@ -223,6 +223,7 @@ void AODProducerWorkflowDPL::fillTrackTablesPerCollision(int collisionID,
   const auto& tpcTracks = data.getTPCTracks();
   const auto& itsTracks = data.getITSTracks();
   const auto& itsABRefs = data.getITSABRefs();
+  const auto& tofClus = data.getTOFClusters();
 
   for (int src = GIndex::NSources; src--;) {
     int start = trackRef.getFirstEntryOfSource(src);
@@ -290,6 +291,13 @@ void AODProducerWorkflowDPL::fillTrackTablesPerCollision(int collisionID,
               const float expBeta = (intLen / (tofInt.getTOF(o2::track::PID::Pion) * cSpeed));
               extraInfoHolder.tofExpMom = mass * expBeta / std::sqrt(1.f - expBeta * expBeta);
             }
+
+            const auto& tpcTrOrig = data.getTPCTrack(trackIndex);
+            const auto& tofCl = tofClus[contributorsGID[GIndex::Source::TOF]];
+
+            // correct the time of the track
+            extraInfoHolder.trackTime = (tofCl.getTime() - tofInt.getTOF(tpcTrOrig.getPID())) * 1e-6; // tof time in \mus, FIXME: account for time of flight to R TOF
+            extraInfoHolder.trackTimeRes = 0;
           }
           if (src == GIndex::Source::TPCTRD || src == GIndex::Source::ITSTPCTRD) {
             const auto& trdOrig = data.getTrack<o2::trd::TrackTRD>(src, contributorsGID[src].getIndex());
