@@ -205,7 +205,7 @@ DECLARE_SOA_COLUMN(TRDChi2, trdChi2, float);                                    
 DECLARE_SOA_COLUMN(TOFChi2, tofChi2, float);                                                  //! Chi2 for the TOF track segment
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);                                              //! dE/dx signal in the TPC
 DECLARE_SOA_COLUMN(TRDSignal, trdSignal, float);                                              //! dE/dx signal in the TRD
-DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);                                              //! TOF signal matched to the track
+// DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float);                                              //! TOF signal matched to the track
 DECLARE_SOA_COLUMN(Length, length, float);                                                    //! Track length
 DECLARE_SOA_COLUMN(TOFExpMom, tofExpMom, float);                                              //! TOF expected momentum obtained in tracking, used to compute the expected times
 DECLARE_SOA_COLUMN(TrackEtaEMCAL, trackEtaEmcal, float);                                      //!
@@ -304,9 +304,12 @@ DECLARE_SOA_TABLE(TracksExtra, "AOD", "TRACKEXTRA", //! Additional track informa
                   track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
                   track::TPCNClsShared, track::TRDPattern, track::ITSChi2NCl,
                   track::TPCChi2NCl, track::TRDChi2, track::TOFChi2,
-                  track::TPCSignal, track::TRDSignal, track::TOFSignal, track::Length, track::TOFExpMom,
+                  track::TPCSignal, track::TRDSignal,
+                  // track::TOFSignal,
+                  track::Length, track::TOFExpMom,
                   track::PIDForTracking<track::Flags>,
-                  track::HasTOF<track::TOFSignal, track::TOFExpMom>,
+                  track::HasTOF<track::TrackTime, track::TOFExpMom>,
+                  // track::HasTOF<track::TOFSignal, track::TOFExpMom>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::ITSNCls<track::ITSClusterMap>, track::ITSNClsInnerBarrel<track::ITSClusterMap>,
