@@ -213,7 +213,7 @@ DECLARE_SOA_COLUMN(TrackPhiEMCAL, trackPhiEmcal, float);                        
 DECLARE_SOA_COLUMN(TrackTime, trackTime, float);                                              //! Estimated time of the track in ns wrt collision().bc() or ambiguoustrack.bcSlice()[0]
 DECLARE_SOA_COLUMN(TrackTimeRes, trackTimeRes, float);                                        //! Resolution of the track time in ns (see TrackFlags::TrackTimeResIsRange)
 DECLARE_SOA_DYNAMIC_COLUMN(HasTOF, hasTOF,                                                    //! Flag to check if track has a TOF measurement
-                           [](float tofSignal, float tofExpMom) -> bool { return (tofSignal > 0.f) && (tofExpMom > 0.f); });
+                           [](float tofSignal, float tofExpMom) -> bool { return (tofSignal > 0.f) && (tofSignal < 250e-3) && (tofExpMom > 0.f); });
 DECLARE_SOA_DYNAMIC_COLUMN(PIDForTracking, pidForTracking, //! PID hypothesis used during tracking. See the constants in the class PID in PID.h
                            [](uint32_t flags) -> uint32_t { return flags >> 28; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNClsFound, tpcNClsFound, //! Number of found TPC clusters
@@ -308,7 +308,7 @@ DECLARE_SOA_TABLE(TracksExtra, "AOD", "TRACKEXTRA", //! Additional track informa
                   // track::TOFSignal,
                   track::Length, track::TOFExpMom,
                   track::PIDForTracking<track::Flags>,
-                  track::HasTOF<track::TrackTime, track::TOFExpMom>,
+                  track::HasTOF<track::TrackTimeRes, track::TOFExpMom>,
                   // track::HasTOF<track::TOFSignal, track::TOFExpMom>,
                   track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
