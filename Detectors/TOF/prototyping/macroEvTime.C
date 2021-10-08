@@ -9,7 +9,7 @@ void macroEvTime()
   for (int i = 0; i < 10; i++) {
     tracks.clear();
     generateEvTimeTracks(tracks, 100);
-    auto evtime = evTimeMaker<eventTimeTrackTest, filterDummy>(tracks);
+    auto evtime = evTimeMaker<std::vector<eventTimeTrackTest>, eventTimeTrackTest, filterDummy>(tracks);
     Printf("Ev time %f +-%f", evtime.eventTime, evtime.eventTimeError);
   }
 }

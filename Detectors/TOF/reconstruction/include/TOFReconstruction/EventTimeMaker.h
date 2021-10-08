@@ -74,8 +74,8 @@ bool filterDummy(const trackType& tr)
 
 eventTimeContainer computeEvTime(const std::vector<eventTimeTrack>& tracks);
 
-template <typename trackType, bool (*trackFilter)(const trackType&)>
-eventTimeContainer evTimeMaker(const std::vector<trackType>& tracks)
+template <typename trackTypeContainer, typename trackType, bool (*trackFilter)(const trackType&)>
+eventTimeContainer evTimeMaker(const trackTypeContainer& tracks)
 {
   static std::vector<eventTimeTrack> trkWork;
   trkWork.clear();
