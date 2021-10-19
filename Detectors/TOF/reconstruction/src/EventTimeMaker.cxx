@@ -20,17 +20,24 @@ namespace o2
 namespace tof
 {
 
-eventTimeContainer computeEvTime(const std::vector<eventTimeTrack>& tracks)
+constexpr int MAXNTRACKINSET = 10;
+// usefull constants
+constexpr ulong combinatorial[MAXNTRACKINSET + 1] = {1, 3, 9, 27, 81, 243, 729, 2187, 6561, 19683, 59049};
+//---------------
+
+void computeEvTime(const std::vector<eventTimeTrack>& tracks, const std::vector<int>& trkIndex, eventTimeContainer& evtime)
 {
-  const int maxNumberOfSets = 100;
+  const int maxNumberOfSets = 200;
 
   int ntracks = tracks.size();
 
   if (ntracks < 2) { // at least 2 tracks required
-    return eventTimeContainer{0.f, 0.f};
+    return;
   }
 
-  int nmaxtracksinset = ntracks > 22 ? 6 : 10; // max number of tracks in a set for event time computation
+  int hypo[MAXNTRACKINSET];
+
+  int nmaxtracksinset = ntracks > 22 ? 6 : MAXNTRACKINSET; // max number of tracks in a set for event time computation
   int ntracksinset = std::min(ntracks, nmaxtracksinset);
 
   Int_t nset = ((ntracks - 1) / ntracksinset) + 1;
@@ -50,13 +57,123 @@ eventTimeContainer computeEvTime(const std::vector<eventTimeTrack>& tracks)
     trackInSet[iset].push_back(i);
   }
 
+  int status;
   // compute event time for each set
-  for (int i = 0; i < nset; i++) {
+  for (int iset = 0; iset < nset; iset++) {
+    ulong bestComb = 0;
+    while (!(status = getStartTimeInSet(tracks, trackInSet[iset], bestComb))) {
+      ;
+    }
+    if (status == 1) {
+      int ntracks = trackInSet[iset].size();
+      // set the best in set
+      for (int itrk = 0; itrk < ntracks; itrk++) {
+        hypo[itrk] = bestComb % 3;
+        bestComb /= 3;
+
+        int index = trkIndex[trackInSet[iset][itrk]];
+        const eventTimeTrack& ctrack = tracks[trackInSet[iset][itrk]];
+        evtime.weights[index] = 1. / (ctrack.expSigma[hypo[itrk]] * ctrack.expSigma[hypo[itrk]]);
+        evtime.tracktime[index] = ctrack.mSignal - ctrack.expTimes[hypo[itrk]];
+      }
+    }
+  } // end loop in set
+
+  // do average among all tracks
+  float finalTime = 0, allweights = 0;
+  for (int i = 0; i < evtime.weights.size(); i++) {
+    if (evtime.weights[i] < 1E-6) {
+      continue;
+    }
+    allweights += evtime.weights[i];
+    finalTime += evtime.tracktime[i] * evtime.weights[i];
   }
 
-  // do average amonf all sets
+  if (allweights < 1E-6) {
+    return;
+  }
 
-  return eventTimeContainer{0.f, 0.f};
+  evtime.eventTime = finalTime / allweights;
+  evtime.eventTimeError = sqrt(1. / allweights);
+}
+
+int getStartTimeInSet(const std::vector<eventTimeTrack>& tracks, std::vector<int>& trackInSet, ulong& bestComb)
+{
+  float chi2, chi2best, averageBest = 0;
+  int hypo[MAXNTRACKINSET];
+  float starttime[MAXNTRACKINSET], weighttime[MAXNTRACKINSET];
+
+  chi2best = 10000;
+  int ntracks = trackInSet.size();
+
+  if (ntracks < 3) {
+    return 2; // no event time in the set
+  }
+
+  ulong ncomb = combinatorial[ntracks];
+  for (ulong comb = 0; comb < ncomb; comb++) {
+    ulong curr = comb;
+
+    int ngood = 0;
+    float average = 0;
+    float sumweights = 0;
+    // get track info in the set for current combination
+    for (int itrk = 0; itrk < ntracks; itrk++) {
+      hypo[itrk] = curr % 3;
+      curr /= 3;
+      const eventTimeTrack& ctrack = tracks[trackInSet[itrk]];
+      starttime[itrk] = ctrack.mSignal - ctrack.expTimes[hypo[itrk]];
+      weighttime[itrk] = 1. / (ctrack.expSigma[hypo[itrk]] * ctrack.expSigma[hypo[itrk]]);
+
+      average += starttime[itrk] * weighttime[itrk];
+      sumweights += weighttime[itrk];
+      ngood++;
+    }
+
+    average /= sumweights;
+
+    // compute chi2
+    chi2 = 0;
+    float deltat;
+    for (int itrk = 0; itrk < ntracks; itrk++) {
+      deltat = starttime[itrk] - average;
+      chi2 += deltat * deltat * weighttime[itrk];
+    }
+    chi2 /= (ngood - 1);
+
+    if (chi2 < chi2best) {
+      bestComb = comb;
+      chi2best = chi2;
+      averageBest = average;
+    }
+  } // end loop in combinations
+
+  int worse = -1;
+  float errworse = 4;
+  // check the best combination
+  ulong curr = bestComb;
+  for (int itrk = 0; itrk < ntracks; itrk++) {
+    hypo[itrk] = curr % 3;
+    curr /= 3;
+
+    const eventTimeTrack& ctrack = tracks[trackInSet[itrk]];
+    float err = ctrack.mSignal - ctrack.expTimes[hypo[itrk]] - averageBest;
+    err /= ctrack.expSigma[hypo[itrk]];
+    err = fabs(err);
+    if (err > errworse) {
+      errworse = err;
+      worse = itrk;
+    }
+  }
+
+  if (worse > -1) {
+    const eventTimeTrack& ctrack = tracks[trackInSet[worse]];
+    // remove the track and try again
+    trackInSet.erase(trackInSet.begin() + worse);
+    return 0;
+  }
+
+  return 1; // good event time in the set
 }
 
 void generateEvTimeTracks(std::vector<eventTimeTrackTest>& tracks, int ntracks, float evTime)
