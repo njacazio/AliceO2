@@ -137,8 +137,8 @@ template <typename trackTypeContainer,
           template <typename T, o2::track::PID::ID> typename response,
           typename responseParametersType>
 eventTimeContainer evTimeMakerFromParam(const trackTypeContainer& tracks,
-                                const responseParametersType& responseParameters,
-                                float diamond = Utils::mEventTimeSpread * 0.029979246 /* spread of primary verdex in cm */)
+                                        const responseParametersType& responseParameters,
+                                        float diamond = Utils::mEventTimeSpread * 0.029979246 /* spread of primary verdex in cm */)
 {
   static std::vector<eventTimeTrack> trkWork;
   trkWork.clear();
