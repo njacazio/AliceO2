@@ -1115,16 +1115,6 @@ void AODProducerWorkflowDPL::run(ProcessingContext& pc)
   if (!o2::tof::Utils::hasFillScheme()) {
     o2::BunchFilling bcf = mcReader->getDigitizationContext()->getBunchFilling();
     std::bitset<3564> bs = bcf.getBCPattern();
-    for (int i = 0; i < bs.size(); i++) {
-      if (bs.test(i)) {
-        // printf("BC = %d\n", i);
-        // To align TOF to LHC phase FIXME!!
-        if (i > 139) {
-          o2::tof::Utils::addInteractionBC(i - 140);
-        } else {
-          o2::tof::Utils::addInteractionBC(3564 + i - 140);
-        }
-      }
     }
   }
   if (mUseMC) {
