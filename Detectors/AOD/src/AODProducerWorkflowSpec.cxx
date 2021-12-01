@@ -1112,13 +1112,13 @@ void AODProducerWorkflowDPL::run(ProcessingContext& pc)
     mcReader = std::make_unique<o2::steer::MCKinematicsReader>("collisioncontext.root");
     LOG(debug) << "FOUND " << mcReader->getDigitizationContext()->getEventRecords().size()
                << " records" << mcReader->getDigitizationContext()->getEventParts().size() << " parts";
-  if (!o2::tof::Utils::hasFillScheme()) {
-    o2::BunchFilling bcf = mcReader->getDigitizationContext()->getBunchFilling();
-    std::bitset<3564> bs = bcf.getBCPattern();
+    if (!o2::tof::Utils::hasFillScheme()) {
+      o2::BunchFilling bcf = mcReader->getDigitizationContext()->getBunchFilling();
+      std::bitset<3564> bs = bcf.getBCPattern();
     }
-  }
-  if (mUseMC) {
-  }
+}
+if (mUseMC) {
+}
 
   std::map<uint64_t, int> bcsMap;
   collectBCs(recoData, mUseMC ? mcReader->getDigitizationContext()->getEventRecords() : std::vector<o2::InteractionTimeRecord>{}, bcsMap);
