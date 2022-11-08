@@ -17,11 +17,15 @@
 #define O2_TOF_PARAMCONTAINER_H
 
 #include "TNamed.h"
+#include "TFile.h"
+#include "Framework/Logger.h"
+#include "map"
 
 namespace o2
 {
 namespace tof
 {
+using paramvar_t = float;
 
 template <int nPar>
 class Parameters : public TNamed
@@ -36,15 +40,15 @@ class Parameters : public TNamed
   /// Setter for the parameter at position iparam
   /// \param iparam index in the array of the parameters
   /// \param value value of the parameter at position iparam
-  void SetParameter(const unsigned int iparam, const pidvar_t value) { mPar[iparam] = value; }
+  void SetParameter(const unsigned int iparam, const paramvar_t value) { mPar[iparam] = value; }
 
   /// Setter for the parameter, using an array
   /// \param param array with parameters
-  void SetParameters(const pidvar_t* params) { std::copy(params, params + mPar.size(), mPar.begin()); }
+  void SetParameters(const paramvar_t* params) { std::copy(params, params + mPar.size(), mPar.begin()); }
 
   /// Setter for the parameter, using a vector
   /// \param params vector with parameters
-  void SetParameters(const std::array<pidvar_t, nPar> params)
+  void SetParameters(const std::array<paramvar_t, nPar> params)
   {
     for (int i = 0; i < nPar; i++) {
       mPar[i] = params[i];
@@ -99,11 +103,15 @@ class Parameters : public TNamed
 
   /// Getter for the parameters
   /// \return returns an array of parameters
-  const pidvar_t* GetParameters() const { return mPar.to_array(); }
+  const paramvar_t* GetParameters() const { return mPar.to_array(); }
 
   /// Getter for the parameters
   /// \return returns an array of parameters
-  const pidvar_t GetParameter(int i) const { return mPar[i]; }
+  const paramvar_t GetParameter(int i) const { return mPar[i]; }
+
+  /// Getter for the parameters
+  /// \return returns an array of parameters
+  const std::string GetParameterName(int i) const { return mParNames[i]; }
 
   /// Getter for the size of the parameter
   /// \return returns the size of the parameter array
@@ -112,11 +120,11 @@ class Parameters : public TNamed
   /// Getter of the parameter at position i
   /// \param i index of the parameter to get
   /// \return returns the parameter value at position i
-  pidvar_t operator[](const unsigned int i) const { return mPar[i]; }
+  paramvar_t operator[](const unsigned int i) const { return mPar[i]; }
 
  private:
   /// Array of the parameter
-  std::array<pidvar_t, nPar> mPar;
+  std::array<paramvar_t, nPar> mPar;
   const std::array<std::string, nPar> mParNames;
 
   ClassDefOverride(Parameters, 1); // Container for parameter of parametrizations
@@ -147,7 +155,7 @@ class ParameterCollection : public TNamed
 
     const auto& toGet = mParameters.at(key);
     for (int i = 0; i < p.size(); i++) {
-      const auto& name = MakeParameterKey(i);
+      const auto& name = p.GetParameterName(i);
       if (toGet.find(name) == toGet.end()) {
         LOG(debug) << "Did not find parameter " << name << " in collection, keeping preexisting";
         continue;
@@ -169,7 +177,7 @@ class ParameterCollection : public TNamed
     if (alreadyPresent) {
       LOG(debug) << "Changing parametrization corresponding to key " << key << " from size " << mParameters[key].size() < " to " << p.GetName() << " of size " << p.size();
     } else {
-      mParameters[key] = std::unordered_map<std::string, pidvar_t>{};
+      mParameters[key] = std::unordered_map<std::string, paramvar_t>{};
       LOG(debug) << "Adding new parametrization corresponding to key " << key << ": " << p.GetName() << " of size " << p.size();
     }
     for (int i = 0; i < p.size(); i++) {
@@ -178,34 +186,29 @@ class ParameterCollection : public TNamed
     return alreadyPresent;
   }
 
-  /// @brief Function to push the parameters from the sub container into the collection and store it under a given key
-  /// @tparam nPar dimension of the parameter to store
-  /// @param p parameter list to store
-  /// @param key store key
-  /// @return true if modified and false if a new key is added
-  bool StoreParameters(const pidvar_t p, const std::string& key, const std::string& parname)
-  {
-    const bool alreadyPresent = (mParameters.find(key) == mParameters.end());
-    if (alreadyPresent) {
-      LOG(debug) << "Changing parametrization corresponding to key " << key << " from size " << mParameters[key].size() < " to " << p.GetName() << " of size " << p.size();
-    } else {
-      LOG(debug) << "Adding new parametrization corresponding to key " << key << ": " << p.GetName() << " of size " << p.size();
-    }
-    mParameters[key] = std::unordered_map<std::string, pidvar_t>{};
-    for (int i = 0; i < p.size(); i++) {
-      mParameters[key][MakeParameterKey(i)] = p[i];
-    }
-    return alreadyPresent;
-  }
-
-  /// @brief Function to create the keys to be used for storing and retrieving the parameters
-  /// @param i index of the parameter
-  /// @return The key used to store/retrieve the parameter as a std::string
-  static std::string MakeParameterKey(int i, std::string tag) { return Form("p_%i", i); }
+//   /// @brief Function to push the parameters from the sub container into the collection and store it under a given key
+//   /// @tparam nPar dimension of the parameter to store
+//   /// @param p parameter list to store
+//   /// @param key store key
+//   /// @return true if modified and false if a new key is added
+//   bool StoreParameters(const paramvar_t p, const std::string& key, const std::string& parname)
+//   {
+//     const bool alreadyPresent = (mParameters.find(key) == mParameters.end());
+//     if (alreadyPresent) {
+//       LOG(debug) << "Changing parametrization corresponding to key " << key << " from size " << mParameters[key].size() < " to " << p.GetName() << " of size " << p.size();
+//     } else {
+//       LOG(debug) << "Adding new parametrization corresponding to key " << key << ": " << p.GetName() << " of size " << p.size();
+//     }
+//     mParameters[key] = std::unordered_map<std::string, paramvar_t>{};
+//     for (int i = 0; i < p.size(); i++) {
+//       mParameters[key][MakeParameterKey(i)] = p[i];
+//     }
+//     return alreadyPresent;
+//   }
 
  private:
   /// Array of the parameter
-  std::unordered_map<std::string, std::unordered_map<std::string, pidvar_t>> mParameters;
+  std::unordered_map<std::string, std::unordered_map<std::string, paramvar_t>> mParameters;
 
   ClassDefOverride(ParameterCollection, 1); // Container for containers of parameter of parametrizations. To be used as a manager, in help of CCDB
 };
