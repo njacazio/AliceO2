@@ -11,6 +11,7 @@
 
 /// \file   ParameterContainers.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
+/// @since  2022-11-08
 /// \brief  Definitions of the containers for the general parameters
 
 #ifndef O2_TOF_PARAMCONTAINER_H
@@ -28,14 +29,14 @@ namespace tof
 using paramvar_t = float;
 
 template <int nPar>
-class Parameters : public TNamed
+class Parameters
 {
  public:
   /// Default constructor
-  Parameters(std::array<std::string, nPar> parNames, TString name = "DefaultParameters") : TNamed(name, name), mPar{}, mParNames{parNames} {};
+  Parameters(std::array<std::string, nPar> parNames, std::string name) : mName{name}, mPar{}, mParNames{parNames} {};
 
   /// Default destructor
-  ~Parameters() override = default;
+  ~Parameters() = default;
 
   /// Setter for the parameter at position iparam
   /// \param iparam index in the array of the parameters
@@ -64,9 +65,9 @@ class Parameters : public TNamed
   void SetParameters(const Parameters<nPar>* params) { SetParameters(params->mPar); };
 
   /// Printer of the parameter values
-  void Print(Option_t* option = "") const override
+  void Print(Option_t* option = "") const
   {
-    LOG(info) << "Parameters '" << fName << "'";
+    LOG(info) << "Parameters '" << mName << "'";
     for (int i = 0; i < nPar; i++) {
       LOG(info) << "Parameter " << i << "/" << nPar - 1 << " is " << mPar[i];
     }
@@ -126,8 +127,7 @@ class Parameters : public TNamed
   /// Array of the parameter
   std::array<paramvar_t, nPar> mPar;
   const std::array<std::string, nPar> mParNames;
-
-  ClassDefOverride(Parameters, 1); // Container for parameter of parametrizations
+  std::string mName;
 };
 
 /// \brief Class container to hold different parameters meant to be stored on the CCDB
@@ -147,23 +147,7 @@ class ParameterCollection : public TNamed
   /// @param key key to look for in the stored information e.g. pass
   /// @return true if found and configured false if not fully configured
   template <int nPar>
-  bool LoadParameters(Parameters<nPar>& p, const std::string& key) const
-  {
-    if (mParameters.find(key) == mParameters.end()) { // Can't find the required key
-      return false;
-    }
-
-    const auto& toGet = mParameters.at(key);
-    for (int i = 0; i < p.size(); i++) {
-      const auto& name = p.GetParameterName(i);
-      if (toGet.find(name) == toGet.end()) {
-        LOG(debug) << "Did not find parameter " << name << " in collection, keeping preexisting";
-        continue;
-      }
-      p.SetParameter(i, toGet.at(name));
-    }
-    return true;
-  }
+  bool LoadParameters(Parameters<nPar>& p, const std::string& key) const;
 
   /// @brief Function to push the parameters from the sub container into the collection and store it under a given key
   /// @tparam nPar dimension of the parameter to store
@@ -185,26 +169,6 @@ class ParameterCollection : public TNamed
     }
     return alreadyPresent;
   }
-
-//   /// @brief Function to push the parameters from the sub container into the collection and store it under a given key
-//   /// @tparam nPar dimension of the parameter to store
-//   /// @param p parameter list to store
-//   /// @param key store key
-//   /// @return true if modified and false if a new key is added
-//   bool StoreParameters(const paramvar_t p, const std::string& key, const std::string& parname)
-//   {
-//     const bool alreadyPresent = (mParameters.find(key) == mParameters.end());
-//     if (alreadyPresent) {
-//       LOG(debug) << "Changing parametrization corresponding to key " << key << " from size " << mParameters[key].size() < " to " << p.GetName() << " of size " << p.size();
-//     } else {
-//       LOG(debug) << "Adding new parametrization corresponding to key " << key << ": " << p.GetName() << " of size " << p.size();
-//     }
-//     mParameters[key] = std::unordered_map<std::string, paramvar_t>{};
-//     for (int i = 0; i < p.size(); i++) {
-//       mParameters[key][MakeParameterKey(i)] = p[i];
-//     }
-//     return alreadyPresent;
-//   }
 
  private:
   /// Array of the parameter
