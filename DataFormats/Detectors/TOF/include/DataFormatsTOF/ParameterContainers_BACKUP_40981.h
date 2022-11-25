@@ -164,9 +164,15 @@ class ParameterCollection : public TNamed
   /// @brief Checks if the container has a particular key e.g. a pass
   /// @return true if found, false if not
 <<<<<<< HEAD
-  bool hasKey(const std::string& key) { return (mParameters.find(key) != mParameters.end()); }
+  bool hasKey(const std::string& key)
+  {
+    return (mParameters.find(key) != mParameters.end());
+  }
 =======
-  bool hasKey(const std::string& key) const { return (mParameters.find(key) != mParameters.end()); }
+  bool hasKey(const std::string& key) const
+  {
+    return (mParameters.find(key) != mParameters.end());
+  }
 >>>>>>> 3f9bc4821f... TOF: Add unfied container for parameters on ccdb
 
   /// @brief Function to load the parameters from the this container into the array based for the asked key, e.g. pass or version
