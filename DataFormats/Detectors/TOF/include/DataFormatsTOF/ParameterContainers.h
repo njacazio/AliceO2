@@ -149,12 +149,6 @@ class ParameterCollection : public TNamed
   template <int nPar>
   bool LoadParameters(Parameters<nPar>& p, const std::string& key) const;
 
-  /// @brief Function to push the parameters from the sub container into the collection and store it under a given key
-  /// @tparam nPar dimension of the parameter to store
-  /// @param p parameter list to store
-  /// @param key store key
-  /// @return true if modified and false if a new key is added
-
   bool addParameter(const std::string& pass, const std::string& parName, float value)
   {
     const bool alreadyPresent = (mParameters.find(pass) != mParameters.end());
@@ -194,6 +188,11 @@ class ParameterCollection : public TNamed
     }
   }
 
+  /// @brief Function to push the parameters from the sub container into the collection and store it under a given key
+  /// @tparam nPar dimension of the parameter to store
+  /// @param p parameter list to store
+  /// @param key store key
+  /// @return true if modified and false if a new key is added
   template <int nPar>
   bool StoreParameters(const Parameters<nPar>& p, const std::string& key)
   {
@@ -216,6 +215,7 @@ class ParameterCollection : public TNamed
   }
 
 private:
+
   /// Array of the parameter
   std::unordered_map<std::string, std::unordered_map<std::string, paramvar_t>> mParameters;
 
