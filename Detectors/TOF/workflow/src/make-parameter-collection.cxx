@@ -65,7 +65,6 @@ class ParamExample : public Parameters<5>
                               "ParamExample"){}; // Default constructor with default parameters
   // ~ParamExample() = default;
   ~ParamExample() {};
-  ClassDef(ParamExample, 1);
 };
 
 int main(int argc, char* argv[])
