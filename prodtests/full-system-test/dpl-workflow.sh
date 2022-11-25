@@ -15,7 +15,6 @@ fi
 
 # ---------------------------------------------------------------------------------------------------------------------
 #Some additional settings used in this workflow
-if [[ -z $OPTIMIZED_PARALLEL_ASYNC ]]; then OPTIMIZED_PARALLEL_ASYNC=0; fi     # Enable tuned process multiplicities for async processing on the EPN
 if [[ -z $CTF_DIR ]];                  then CTF_DIR=$FILEWORKDIR; fi           # Directory where to store CTFs
 if [[ -z $CTF_DICT ]];                 then CTF_DICT="ctf_dictionary.root"; fi # Local dictionary file name if its creation is request
 if [[ -z $CTF_METAFILES_DIR ]];        then CTF_METAFILES_DIR="/dev/null"; fi  # Directory where to store CTF files metada, /dev/null : skip their writing
@@ -33,7 +32,7 @@ source $MYDIR/workflow-setup.sh
 workflow_has_parameter CALIB &&  { source $O2DPG_ROOT/DATA/common/setenv_calib.sh; [[ $? != 0 ]] && exit 1; }
 
 [[ -z $SHM_MANAGER_SHMID ]] && ( [[ $EXTINPUT == 1 ]] || [[ $NUMAGPUIDS != 0 ]] ) && ARGS_ALL+=" --no-cleanup"
-( [[ $GPUTYPE != "CPU" ]] || [[ $OPTIMIZED_PARALLEL_ASYNC != 0 ]] ) && ARGS_ALL+=" --shm-mlock-segment-on-creation 1"
+[[ $GPUTYPE != "CPU" || ! -z $OPTIMIZED_PARALLEL_ASYNC ]] && ARGS_ALL+=" --shm-mlock-segment-on-creation 1"
 if [[ $EPNSYNCMODE == 1 ]] || type numactl >/dev/null 2>&1 && [[ `numactl -H | grep "node . size" | wc -l` -ge 2 ]]; then
   [[ $NUMAGPUIDS != 0 ]] && ARGS_ALL+=" --child-driver 'numactl --membind $NUMAID --cpunodebind $NUMAID'"
 fi
@@ -181,14 +180,14 @@ if [[ ! -z $EVE_NTH_EVENT ]]; then
   EVE_CONFIG+=" --only-nth-event=$EVE_NTH_EVENT"
 fi
 
-if [[ $GPUTYPE != "CPU" && $NUMAGPUIDS != 0 ]] && [[ -z $ROCR_VISIBLE_DEVICES || $ROCR_VISIBLE_DEVICES = "0,1,2,3,4,5,6,7" ]]; then
+if [[ $GPUTYPE != "CPU" && $NUMAGPUIDS != 0 ]] && [[ -z $ROCR_VISIBLE_DEVICES || $ROCR_VISIBLE_DEVICES = "0,1,2,3,4,5,6,7" || $ROCR_VISIBLE_DEVICES = "0,1,2,3" || $ROCR_VISIBLE_DEVICES = "4,5,6,7" ]]; then
   GPU_CONFIG_KEY+="GPU_global.registerSelectedSegmentIds=$NUMAID;"
 fi
 
 if [[ $GPUTYPE == "HIP" ]]; then
   if [[ -z $ROCR_VISIBLE_DEVICES || $ROCR_VISIBLE_DEVICES = "0,1,2,3,4,5,6,7" || $ROCR_VISIBLE_DEVICES = "0,1,2,3" || $ROCR_VISIBLE_DEVICES = "4,5,6,7" ]]; then
     GPU_CONFIG_KEY+="GPU_proc.deviceNum=0;"
-    if [[ $NUMAID == 0 || $NUMAGPUIDS == 0 || "0$ROCR_VISIBLE_DEVICES" == "00,1,2,3" || "0$ROCR_VISIBLE_DEVICES" == "04,5,6,7" ]]; then
+    if [[ "0$ROCR_VISIBLE_DEVICES" != "04,5,6,7" || $NUMAGPUIDS == 0 ]] && [[ $NUMAID == 0 || $NUMAGPUIDS == 0 || "0$ROCR_VISIBLE_DEVICES" == "00,1,2,3" ]]; then
       export TIMESLICEOFFSET=0
     else
       export TIMESLICEOFFSET=$NGPUS
@@ -305,11 +304,10 @@ elif [[ $EXTINPUT == 1 ]]; then
       PROXY_INSPEC+=";$PROXY_INNAME:$i/$j"
     done
   done
-  [[ "0$CALIB_TPC_IDC" == "01" && "0$FLP_TPC_IDC" != "01" ]] && PROXY_INSPEC+=";RAWINTPCGA:TPC/IDCGROUPA;RAWINTPCGC:TPC/IDCGROUPC"
   [[ ! -z $TIMEFRAME_RATE_LIMIT ]] && [[ $TIMEFRAME_RATE_LIMIT != 0 ]] && PROXY_CHANNEL+=";name=metric-feedback,type=pull,method=connect,address=ipc://${UDS_PREFIX}metric-feedback-$NUMAID,transport=shmem,rateLogging=0"
   add_W o2-dpl-raw-proxy "--dataspec \"$PROXY_INSPEC\" --readout-proxy \"--channel-config \\\"$PROXY_CHANNEL\\\"\" ${TIMEFRAME_SHM_LIMIT+--timeframes-shm-limit} $TIMEFRAME_SHM_LIMIT" "" 0
 elif [[ $DIGITINPUT == 1 ]]; then
-  [[ $NTIMEFRAMES != 1 ]] && { echo "Digit input works only with NTIMEFRAMES=1"; exit 1; }
+  [[ $NTIMEFRAMES != 1 ]] && { echo "Digit input works only with NTIMEFRAMES=1" 1>&2; exit 1; }
   DISABLE_DIGIT_ROOT_INPUT=
   DISABLE_DIGIT_CLUSTER_INPUT=
   TOF_INPUT=digits
@@ -318,6 +316,7 @@ elif [[ $DIGITINPUT == 1 ]]; then
   has_detector MID && add_W o2-mid-digits-reader-workflow "$DISABLE_MC" ""
 else
   if [[ $NTIMEFRAMES == -1 ]]; then NTIMEFRAMES_CMD= ; else NTIMEFRAMES_CMD="--loop $NTIMEFRAMES"; fi
+  [[ ! -f $RAWINPUTDIR/rawAll.cfg ]] && { echo "rawAll.cfg missing" 1>&2; exit 1; }
   add_W o2-raw-file-reader-workflow "--detect-tf0 --delay $TFDELAY $NTIMEFRAMES_CMD --max-tf 0 --input-conf $RAWINPUTDIR/rawAll.cfg" "HBFUtils.nHBFPerTF=$NHBPERTF"
 fi
 
@@ -358,6 +357,7 @@ fi
 has_detector_reco ITS && add_W o2-its-reco-workflow "--trackerCA $ITS_CONFIG $DISABLE_MC $DISABLE_DIGIT_CLUSTER_INPUT $DISABLE_ROOT_OUTPUT --pipeline $(get_N its-tracker ITS REST 1 ITSTRK)" "$ITS_CONFIG_KEY;$ITSMFT_STROBES"
 has_detector_reco FT0 && add_W o2-ft0-reco-workflow "$DISABLE_DIGIT_ROOT_INPUT $DISABLE_ROOT_OUTPUT $DISABLE_MC --pipeline $(get_N ft0-reconstructor FT0 REST 1)"
 has_detector_reco TRD && add_W o2-trd-tracklet-transformer "$DISABLE_DIGIT_ROOT_INPUT $DISABLE_ROOT_OUTPUT $DISABLE_MC $TRD_FILTER_CONFIG --pipeline $(get_N TRDTRACKLETTRANSFORMER TRD REST 1 TRDTRKTRANS)"
+has_detector_reco TRD && ([[ -z "$DISABLE_ROOT_OUTPUT" ]] || needs_root_output o2-trd-digittracklet-writer) && add_W o2-trd-digittracklet-writer
 has_detectors_reco ITS TPC && has_detector_matching ITSTPC && add_W o2-tpcits-match-workflow "$DISABLE_DIGIT_ROOT_INPUT $DISABLE_ROOT_OUTPUT $DISABLE_MC $SEND_ITSTPC_DTGL --pipeline $(get_N itstpc-track-matcher MATCH REST 1 TPCITS)" "$ITSMFT_STROBES"
 has_detector_reco TRD && [[ ! -z "$TRD_SOURCES" ]] && add_W o2-trd-global-tracking "$DISABLE_DIGIT_ROOT_INPUT $DISABLE_ROOT_OUTPUT $DISABLE_MC $TRD_CONFIG $TRD_FILTER_CONFIG --track-sources $TRD_SOURCES --pipeline $(get_N trd-globaltracking_TPC_ITS-TPC_ TRD REST 1 TRDTRK)" "$TRD_CONFIG_KEY;$ITSMFT_STROBES"
 has_detector_reco TOF && [[ ! -z "$TOF_SOURCES" ]] && add_W o2-tof-matcher-workflow "$DISABLE_DIGIT_ROOT_INPUT $DISABLE_ROOT_OUTPUT $DISABLE_MC --track-sources $TOF_SOURCES --pipeline $(get_N tof-matcher TOF REST 1 TOFMATCH)" "$ITSMFT_STROBES"

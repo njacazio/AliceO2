@@ -19,6 +19,7 @@
 #include "Framework/CompletionPolicy.h"
 #include "Framework/CompletionPolicyHelpers.h"
 #include "Framework/DeviceSpec.h"
+#include "Framework/InputSpec.h"
 #include "Algorithm/RangeTokenizer.h"
 #include "SimReaderSpec.h"
 #include "DetectorsCommonDataFormats/DetID.h"
@@ -39,11 +40,11 @@
 #include "ITSMFTDigitizerSpec.h"
 #include "ITSMFTWorkflow/DigitWriterSpec.h"
 
-#ifdef ENABLE_UPGRADES
-// for ITS3
-#include "ITS3DigitizerSpec.h"
-#include "ITS3Workflow/DigitWriterSpec.h"
-#endif
+// #ifdef ENABLE_UPGRADES
+// // for ITS3
+// #include "ITS3DigitizerSpec.h"
+// #include "ITS3Workflow/DigitWriterSpec.h"
+// #endif
 
 // for TOF
 #include "TOFDigitizerSpec.h"
@@ -112,6 +113,7 @@
 #include <unistd.h> // for getppid
 #include <type_traits>
 #include "DetectorsBase/DPLWorkflowUtils.h"
+#include "Framework/CCDBParamSpec.h"
 
 using namespace o2::framework;
 
@@ -588,16 +590,16 @@ WorkflowSpec defineDataProcessing(ConfigContext const& configcontext)
     writerSpecs.emplace_back(o2::itsmft::getITSDigitWriterSpec(mctruth));
   }
 
-#ifdef ENABLE_UPGRADES
-  // the ITS3 part
-  if (isEnabled(o2::detectors::DetID::IT3)) {
-    detList.emplace_back(o2::detectors::DetID::IT3);
-    // connect the ITS digitization
-    specs.emplace_back(o2::its3::getITS3DigitizerSpec(fanoutsize++, mctruth));
-    // // connect ITS digit writer
-    specs.emplace_back(o2::its3::getITS3DigitWriterSpec(mctruth));
-  }
-#endif
+  // #ifdef ENABLE_UPGRADES
+  //   // the ITS3 part
+  //   if (isEnabled(o2::detectors::DetID::IT3)) {
+  //     detList.emplace_back(o2::detectors::DetID::IT3);
+  //     // connect the ITS digitization
+  //     specs.emplace_back(o2::its3::getITS3DigitizerSpec(fanoutsize++, mctruth));
+  //     // // connect ITS digit writer
+  //     specs.emplace_back(o2::its3::getITS3DigitWriterSpec(mctruth));
+  //   }
+  // #endif
 
   // the MFT part
   if (isEnabled(o2::detectors::DetID::MFT)) {
@@ -766,6 +768,26 @@ WorkflowSpec defineDataProcessing(ConfigContext const& configcontext)
     for (auto& s : remaining) {
       specs.push_back(s);
     }
+  }
+
+  // For reasons of offering homegenous behaviour (consistent options to outside scripts),
+  // we require that at least one of the devices above listens to the DPL CCDB fetcher.
+  // Verify this or insert a dummy channel in one of the devices. (This cannot be done in the SimReader
+  // as the SimReader is the source device injecting the timing information).
+  // In future this code can serve as a check that all digitizers access CCDB via the DPL fetcher.
+  bool haveCCDBInputSpec = false;
+  for (auto spec : specs) {
+    for (auto in : spec.inputs) {
+      if (in.lifetime == Lifetime::Condition) {
+        haveCCDBInputSpec = true;
+        break;
+      }
+    }
+  }
+  if (!haveCCDBInputSpec && specs.size() > 0) {
+    LOG(info) << "No one uses DPL CCDB .. injecting a dummy CCDB query into " << specs.back().name;
+    specs.back().inputs.emplace_back("_dummyOrbitReset", "CTP", "ORBITRESET", 0, Lifetime::Condition,
+                                     ccdbParamSpec("CTP/Calib/OrbitReset"));
   }
 
   // The SIM Reader. NEEDS TO BE LAST

@@ -149,6 +149,45 @@ class ParameterCollection : public TNamed
   template <int nPar>
   bool LoadParameters(Parameters<nPar>& p, const std::string& key) const;
 
+  bool addParameter(const std::string& pass, const std::string& parName, float value)
+  {
+    const bool alreadyPresent = (mParameters.find(pass) != mParameters.end());
+    if (alreadyPresent) {
+      LOG(debug) << "Changing parametrization corresponding to key " << pass << " from size " << mParameters[pass].size() << " to " << parName;
+    } else {
+      mParameters[pass] = std::unordered_map<std::string, paramvar_t>{};
+      LOG(debug) << "Adding new parametrization corresponding to key " << pass << ": " << parName;
+    }
+    mParameters[pass][parName] = value;
+    return true;
+  }
+
+  int getSize(const std::string& pass) const
+  {
+    const bool alreadyPresent = (mParameters.find(pass) != mParameters.end());
+    if(!alreadyPresent){
+      return -1;
+    }
+    return mParameters.at(pass).size();
+  }
+
+  const auto& getPars(const std::string& pass) const
+  {
+    return mParameters.at(pass);
+  }
+
+  void print(std::string pass){
+    const auto& size = getSize(pass);
+    if(size < 0){
+      LOG(info) << "empty pass: " << pass;
+      return;
+    }
+    LOG(info) << "Pass \"" << pass << "\" with size " << size;
+    for(const auto& [par, value] : mParameters.at(pass)){
+      LOG(info) << "par name = " << par << ", value = " << value;
+    }
+  }
+
   /// @brief Function to push the parameters from the sub container into the collection and store it under a given key
   /// @tparam nPar dimension of the parameter to store
   /// @param p parameter list to store
@@ -157,7 +196,7 @@ class ParameterCollection : public TNamed
   template <int nPar>
   bool StoreParameters(const Parameters<nPar>& p, const std::string& key)
   {
-    const bool alreadyPresent = (mParameters.find(key) == mParameters.end());
+    const bool alreadyPresent = (mParameters.find(key) != mParameters.end());
     if (alreadyPresent) {
       LOG(debug) << "Changing parametrization corresponding to key " << key << " from size " << mParameters[key].size() < " to " << p.GetName() << " of size " << p.size();
     } else {
@@ -170,7 +209,13 @@ class ParameterCollection : public TNamed
     return alreadyPresent;
   }
 
- private:
+  const auto& getFullMap()
+  {
+    return mParameters;
+  }
+
+private:
+
   /// Array of the parameter
   std::unordered_map<std::string, std::unordered_map<std::string, paramvar_t>> mParameters;
 
