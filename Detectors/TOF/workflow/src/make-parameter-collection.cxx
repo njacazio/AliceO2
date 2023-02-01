@@ -80,17 +80,17 @@ int main(int argc, char* argv[])
   collection.storeParameters(parameters, "test1");
   collection.storeParameters(parameters2, "test2");
   TFile f("/tmp/testparamcollection.root", "RECREATE");
-  collection.SaveAs("test");
+  collection.Write("test");
   f.Close();
 
   ParameterCollection collection2;
   collection2.loadParamFromFile("/tmp/testparamcollection.root", "test");
-  ParamExample parameters3;
-  collection.retrieveParameters(parameters3, "test1");
   LOG(info) << "Input:";
   collection.print();
   LOG(info) << "Retrieved:";
   collection2.print();
+  ParamExample parameters3;
+  collection.retrieveParameters(parameters3, "test1");
   LOG(info) << "Input parameters:";
   parameters.print();
   LOG(info) << "Retrieved parameters:";
