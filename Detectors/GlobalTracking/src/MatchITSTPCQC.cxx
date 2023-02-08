@@ -113,8 +113,9 @@ bool MatchITSTPCQC::init()
   mPhiTPC = new TH1F("mPhiTPC", "Phi distribution of TPC tracks; Phi [rad]; dNdPhi", 100, 0.f, 2 * TMath::Pi());
   mFractionITSTPCmatchPhi = new TEfficiency("mFractionITSTPCmatchPhi", "Fraction of ITSTPC matched tracks vs Phi; Phi [rad]; Eff", 100, 0.f, 2 * TMath::Pi());
   mPhi = new TH1F("mPhi", "Phi distribution of matched tracks; Phi [rad]; dNdPhi", 100, 0.f, 2 * TMath::Pi());
+  // Phi vs Pt
   mPhiVsPtTPC = new TH2F("mPhiVsPtTPC", "Phi distribution of TPC tracks vs Pt; #it{p}_{T} [GeV#it{c}]; Phi [rad]; dNdPhi", 20, 0.f, 20.f, 100, 0.f, 2 * TMath::Pi());
-  mFractionITSTPCmatchPhi = new TEfficiency("mFractionITSTPCmatchPhi", "Fraction of ITSTPC matched tracks vs Phi; #it{p}_{T} [GeV#it{c}]; Phi [rad]; Eff", 20, 0.f, 20.f, 100, 0.f, 2 * TMath::Pi());
+  mFractionITSTPCmatchPhiVsPt = new TEfficiency("mFractionITSTPCmatchPhiVsPt", "Fraction of ITSTPC matched tracks vs Phi and Pt; #it{p}_{T} [GeV#it{c}]; Phi [rad]; Eff", 20, 0.f, 20.f, 100, 0.f, 2 * TMath::Pi());
   mPhiVsPt = new TH2F("mPhiVsPt", "Phi distribution of matched tracks vs Pt; #it{p}_{T} [GeV#it{c}]; Phi [rad]; dNdPhi", 20, 0.f, 20.f, 100, 0.f, 2 * TMath::Pi());
   // Eta
   mEtaTPC = new TH1F("mEtaTPC", "Eta distribution of TPC tracks; Eta; dNdEta", 100, -2.f, 2.f);
@@ -437,7 +438,7 @@ void MatchITSTPCQC::finalize()
   }
   mFractionITSTPCmatchPhi->SetTitle(Form("%s;%s;%s", mFractionITSTPCmatchPhi->GetTitle(), mPhi->GetXaxis()->GetTitle(), "Efficiency"));
 
-  setEfficiency(mFractionITSTPCmatchPhiVsPt, mPhiVsPtTPC, mPhiVsPt);
+  setEfficiency(mFractionITSTPCmatchPhiVsPt, mPhiVsPt, mPhiVsPtTPC);
 
   if (!mFractionITSTPCmatchEta->SetTotalHistogram(*mEtaTPC, "f") ||
       !mFractionITSTPCmatchEta->SetPassedHistogram(*mEta, "")) {
