@@ -1609,6 +1609,11 @@ void MatchTOF::BestMatches(std::vector<o2::dataformats::MatchInfoTOFReco>& match
     matchedTracksIndex[trkType][itrk] = matchedTracks[trkTypeSplitted].size();              // index of the MatchInfoTOF correspoding to this track
     matchedClustersIndex[matchingPair.getTOFClIndex()] = matchedTracksIndex[trkType][itrk]; // index of the track that was matched to this cluster
 
+    // let's check if cluster has multiple-hits (noferini)
+    if (TOFClusWork[matchingPair.getTOFClIndex()].getNumOfContributingChannels() > 1) {
+      const auto& tofcl = TOFClusWork[matchingPair.getTOFClIndex()];
+      matchingPair.setHitPattern(tofcl.getBits());
+    }
     matchedTracks[trkTypeSplitted].push_back(matchingPair); // array of MatchInfoTOF
 
     // get fit info
