@@ -440,7 +440,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TRDNLayers, trdPattern, //! Number of TRD tracklets i
 namespace v002
 {
 DECLARE_SOA_COLUMN(TOFHitPattern, tofHitPattern, int); //! Hit pattern for TOF
-DECLARE_SOA_DYNAMIC_COLUMN(TOFTopology, tofTopology, //! Number of ITS clusters in the Inner Barrel
+DECLARE_SOA_DYNAMIC_COLUMN(TOFTopology, tofTopology,   //! Number of ITS clusters in the Inner Barrel
                            [](int pattern) -> uint8_t {
                              return pattern & ((1 << 8) - 1);
                            });
@@ -448,7 +448,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TOFPosition, tofPosition, //! TOF hit position
                            [](int pattern) -> int {
                              return pattern >> 8;
                            });
-}
+} // namespace v002
 } // namespace track
 
 DECLARE_SOA_TABLE_FULL(StoredTracks, "Tracks", "AOD", "TRACK", //! On disk version of the track parameters at collision vertex
