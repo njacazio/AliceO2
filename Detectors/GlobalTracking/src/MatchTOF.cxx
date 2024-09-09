@@ -1555,7 +1555,7 @@ void MatchTOF::BestMatches(std::vector<o2::dataformats::MatchInfoTOFReco>& match
   int i = 0;
 
   // then we take discard the pairs if their track or cluster was already matched (since they are ordered in chi2, we will take the best matching)
-  for (const o2::dataformats::MatchInfoTOFReco& matchingPair : matchedTracksPairs) {
+  for (o2::dataformats::MatchInfoTOFReco& matchingPair : matchedTracksPairs) {
     int trkType = (int)matchingPair.getTrackType();
 
     int itrk = matchingPair.getIdLocal();
