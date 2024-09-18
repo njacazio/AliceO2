@@ -326,7 +326,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeAl, tofExpTimeAl, //! Expected time for the
                              return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
                            });
 
-DECLARE_SOA_DYNAMIC_COLUMN(TOFSignal, tofSignal, //! TOF signal
+DECLARE_SOA_DYNAMIC_COLUMN(TOFValue, tofValue, //! TOF signal
                            [](float tracktime, float length, float tofExpMom, uint32_t flags) -> float {
                              const uint32_t pidtrk = (flags >> 28);
                              float exptime = 0.f;
@@ -608,7 +608,7 @@ DECLARE_SOA_TABLE_FULL(StoredTracksExtra_000, "TracksExtra", "AOD", "TRACKEXTRA"
                        track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
                        track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                        track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
-                       track::TOFSignal<track::TrackTime, track::Length, track::TOFExpMom, track::Flags>,
+                       track::TOFValue<track::TrackTime, track::Length, track::TOFExpMom, track::Flags>,
                        track::TOFExpTime<track::Length, track::TOFExpMom>,
                        track::TOFExpTimeEl<track::Length, track::TOFExpMom>,
                        track::TOFExpTimeMu<track::Length, track::TOFExpMom>,
@@ -640,7 +640,7 @@ DECLARE_SOA_TABLE_FULL_VERSIONED(StoredTracksExtra_001, "TracksExtra", "AOD", "T
                                  track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                                  track::v001::ITSClsSizeInLayer<track::ITSClusterSizes>,
                                  track::v001::IsITSAfterburner<track::v001::DetectorMap, track::ITSChi2NCl>,
-                                 track::TOFSignal<track::TrackTime, track::Length, track::TOFExpMom, track::Flags>,
+                                 track::TOFValue<track::TrackTime, track::Length, track::TOFExpMom, track::Flags>,
                                  track::TOFExpTime<track::Length, track::TOFExpMom>,
                                  track::TOFExpTimeEl<track::Length, track::TOFExpMom>,
                                  track::TOFExpTimeMu<track::Length, track::TOFExpMom>,
