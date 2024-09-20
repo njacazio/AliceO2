@@ -109,7 +109,6 @@ o2_add_library(Framework
                        src/O2DataModelHelpers.cxx
                        src/OutputSpec.cxx
                        src/OptionsHelpers.cxx
-                       src/PID.cxx
                        src/PropertyTreeHelpers.cxx
                        src/ProcessingContext.cxx
                        src/Plugin.cxx
