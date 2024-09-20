@@ -24,7 +24,6 @@
 #include "CommonConstants/GeomConstants.h"
 #include "CommonConstants/ZDCConstants.h"
 #include "SimulationDataFormat/MCGenProperties.h"
-#include "Framework/PID.h"
 
 namespace o2
 {
