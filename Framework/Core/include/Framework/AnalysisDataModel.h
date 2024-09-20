@@ -268,110 +268,151 @@ DECLARE_SOA_EXPRESSION_COLUMN(DetectorMap, detectorMap, uint8_t, //! Detector ma
                                 ifnode((aod::track::tofChi2 >= 0.f) && (aod::track::tofExpMom > 0.f), static_cast<uint8_t>(o2::aod::track::TOF), (uint8_t)0x0));
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTime, tofExpTime, //! Expected time for the track to reach the TOF
-                           [](float length, float tofExpMom, float mMassZSqared) -> float {
-                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                           [](float length, float tofExpMom, float massSquared) -> float {
+                             if (tofExpMom <= 0.f) {
+                               return -999.f;
+                             }
+                             return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+                             //  return 0;
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeEl, tofExpTimeEl, //! Expected time for the track to reach the TOF under the electron hypothesis
                            [](float length, float tofExpMom) -> float {
-                             constexpr float mMassZSqared = o2::constants::physics::MassElectron * o2::constants::physics::MassElectron;
-                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                             constexpr float massSquared = o2::constants::physics::MassElectron * o2::constants::physics::MassElectron;
+                             if (tofExpMom <= 0.f) {
+                               return -999.f;
+                             }
+                             return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeMu, tofExpTimeMu, //! Expected time for the track to reach the TOF under the muon hypothesis
                            [](float length, float tofExpMom) -> float {
-                             constexpr float mMassZSqared = o2::constants::physics::MassMuon * o2::constants::physics::MassMuon;
-                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                             constexpr float massSquared = o2::constants::physics::MassMuon * o2::constants::physics::MassMuon;
+                             if (tofExpMom <= 0.f) {
+                               return -999.f;
+                             }
+                             return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimePi, tofExpTimePi, //! Expected time for the track to reach the TOF under the pion hypothesis
                            [](float length, float tofExpMom) -> float {
-                             constexpr float mMassZSqared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
-                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                             constexpr float massSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
+                             if (tofExpMom <= 0.f) {
+                               return -999.f;
+                             }
+                             return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeKa, tofExpTimeKa, //! Expected time for the track to reach the TOF under the kaon hypothesis
                            [](float length, float tofExpMom) -> float {
-                             constexpr float mMassZSqared = o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged;
-                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                             constexpr float massSquared = o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged;
+                             if (tofExpMom <= 0.f) {
+                               return -999.f;
+                             }
+                             return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimePr, tofExpTimePr, //! Expected time for the track to reach the TOF under the proton hypothesis
                            [](float length, float tofExpMom) -> float {
-                             constexpr float mMassZSqared = o2::constants::physics::MassProton * o2::constants::physics::MassProton;
-                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                             constexpr float massSquared = o2::constants::physics::MassProton * o2::constants::physics::MassProton;
+                             if (tofExpMom <= 0.f) {
+                               return -999.f;
+                             }
+                             return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeDe, tofExpTimeDe, //! Expected time for the track to reach the TOF under the deuteron hypothesis
                            [](float length, float tofExpMom) -> float {
-                             constexpr float mMassZSqared = o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron;
-                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                             constexpr float massSquared = o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron;
+                             if (tofExpMom <= 0.f) {
+                               return -999.f;
+                             }
+                             return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeTr, tofExpTimeTr, //! Expected time for the track to reach the TOF under the triton hypothesis
                            [](float length, float tofExpMom) -> float {
-                             constexpr float mMassZSqared = o2::constants::physics::MassTriton * o2::constants::physics::MassTriton;
-                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                             constexpr float massSquared = o2::constants::physics::MassTriton * o2::constants::physics::MassTriton;
+                             if (tofExpMom <= 0.f) {
+                               return -999.f;
+                             }
+                             return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeHe, tofExpTimeHe, //! Expected time for the track to reach the TOF under the helium3 hypothesis
                            [](float length, float tofExpMom) -> float {
-                             constexpr float mMassZSqared = o2::constants::physics::MassHelium3 * o2::constants::physics::MassHelium3;
-                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                             constexpr float massSquared = o2::constants::physics::MassHelium3 * o2::constants::physics::MassHelium3;
+                             if (tofExpMom <= 0.f) {
+                               return -999.f;
+                             }
+                             return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpTimeAl, tofExpTimeAl, //! Expected time for the track to reach the TOF under the helium4 hypothesis
                            [](float length, float tofExpMom) -> float {
-                             constexpr float mMassZSqared = o2::constants::physics::MassAlpha * o2::constants::physics::MassAlpha;
-                             return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                             constexpr float massSquared = o2::constants::physics::MassAlpha * o2::constants::physics::MassAlpha;
+                             if (tofExpMom <= 0.f) {
+                               return -999.f;
+                             }
+                             return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFValue, tofValue, //! TOF signal
                            [](float tracktime, float length, float tofExpMom, uint32_t flags) -> float {
                              const uint32_t pidtrk = (flags >> 28);
-                             float exptime = 0.f;
+                             if (tofExpMom <= 0.f) {
+                               return 0.f;
+                             }
                              switch (pidtrk) {
                                case 0: {
-                                 constexpr float mMassZSqared = o2::constants::physics::MassElectron * o2::constants::physics::MassElectron;
-                                 exptime = o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                                 constexpr float massSquared = o2::constants::physics::MassElectron * o2::constants::physics::MassElectron;
+                                 const float exptime = length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+                                 return tracktime * 1000.f + exptime;
                                } break;
                                case 1: {
-                                 constexpr float mMassZSqared = o2::constants::physics::MassMuon * o2::constants::physics::MassMuon;
-                                 exptime = o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                                 constexpr float massSquared = o2::constants::physics::MassMuon * o2::constants::physics::MassMuon;
+                                 const float exptime = length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+                                 return tracktime * 1000.f + exptime;
                                } break;
                                case 2: {
-                                 constexpr float mMassZSqared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
-                                 exptime = o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                                 constexpr float massSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
+                                 const float exptime = length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+                                 return tracktime * 1000.f + exptime;
                                } break;
                                case 3: {
-                                 constexpr float mMassZSqared = o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged;
-                                 exptime = o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                                 constexpr float massSquared = o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged;
+                                 const float exptime = length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+                                 return tracktime * 1000.f + exptime;
                                } break;
                                case 4: {
-                                 constexpr float mMassZSqared = o2::constants::physics::MassProton * o2::constants::physics::MassProton;
-                                 exptime = o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                                 constexpr float massSquared = o2::constants::physics::MassProton * o2::constants::physics::MassProton;
+                                 const float exptime = length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+                                 return tracktime * 1000.f + exptime;
                                } break;
                                case 5: {
-                                 constexpr float mMassZSqared = o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron;
-                                 exptime = o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                                 constexpr float massSquared = o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron;
+                                 const float exptime = length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+                                 return tracktime * 1000.f + exptime;
                                } break;
                                case 6: {
-                                 constexpr float mMassZSqared = o2::constants::physics::MassTriton * o2::constants::physics::MassTriton;
-                                 exptime = o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                                 constexpr float massSquared = o2::constants::physics::MassTriton * o2::constants::physics::MassTriton;
+                                 const float exptime = length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+                                 return tracktime * 1000.f + exptime;
                                } break;
                                case 7: {
-                                 constexpr float mMassZSqared = o2::constants::physics::MassHelium3 * o2::constants::physics::MassHelium3;
-                                 exptime = o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                                 constexpr float massSquared = o2::constants::physics::MassHelium3 * o2::constants::physics::MassHelium3;
+                                 const float exptime = length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+                                 return tracktime * 1000.f + exptime;
                                } break;
                                case 8: {
-                                 constexpr float mMassZSqared = o2::constants::physics::MassAlpha * o2::constants::physics::MassAlpha;
-                                 exptime = o2::framework::pid::tof::MassToExpTime(tofExpMom, length, mMassZSqared);
+                                 constexpr float massSquared = o2::constants::physics::MassAlpha * o2::constants::physics::MassAlpha;
+                                 const float exptime = length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+                                 return tracktime * 1000.f + exptime;
                                }
                                default:
                                  return 0.f;
                                  break;
                              }
-                             return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
                            });
 
 namespace v001
