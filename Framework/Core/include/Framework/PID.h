@@ -12,6 +12,9 @@
 #ifndef o2_framework_PID_H_DEFINED
 #define o2_framework_PID_H_DEFINED
 
+#include <cmath>
+#include "CommonConstants/PhysicsConstants.h"
+
 ///
 /// \file PID.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
@@ -30,14 +33,22 @@ namespace tof
 /// @param length the track length in cm
 /// @param massSquared the squared mass of the particle in GeV^2/c^4
 /// @return the expected time of flight of the particle in ps
-float MassToExpTime(float tofExpMom, float length, float massSquared);
+float MassToExpTime(float tofExpMom, float length, float massSquared)
+{
+  if (tofExpMom <= 0.f) {
+    return -999.f;
+  }
+  return length * std::sqrt((massSquared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom);
+}
 
 /// @brief Compute the signal of the time of flight for a given track time and expected time of flight
 /// @param tracktime the measured time of flight (at the vertex) in ps
 /// @param exptime the expected time of flight in ps
 /// @return the signal of the time of flight
-float TrackTimeToTOFSignal(float tracktime, float exptime);
-
+float TrackTimeToTOFSignal(float tracktime, float exptime)
+{
+  return tracktime * 1000.f + exptime;
+}
 } // namespace tof
 
 } // namespace o2::framework::pid
