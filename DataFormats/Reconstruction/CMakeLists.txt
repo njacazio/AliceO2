@@ -56,6 +56,7 @@ o2_target_root_dictionary(
           include/ReconstructionDataFormats/MatchInfoTOF.h
           include/ReconstructionDataFormats/MatchInfoTOFReco.h
           include/ReconstructionDataFormats/TrackLTIntegral.h
+          include/ReconstructionDataFormats/PID.h
           include/ReconstructionDataFormats/DCA.h
           include/ReconstructionDataFormats/V0.h
           include/ReconstructionDataFormats/Cascade.h
