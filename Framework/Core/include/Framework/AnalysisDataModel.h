@@ -332,56 +332,49 @@ DECLARE_SOA_DYNAMIC_COLUMN(TOFValue, tofValue, //! TOF signal
                              if (tofExpMom <= 0.f) {
                                return 0.f;
                              }
+                             float exptime = 0.f;
                              switch (pidtrk) {
                                case 0: {
                                  constexpr float massSquared = o2::constants::physics::MassElectron * o2::constants::physics::MassElectron;
-                                 const float exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
-                                 return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
+                                 exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
                                } break;
                                case 1: {
                                  constexpr float massSquared = o2::constants::physics::MassMuon * o2::constants::physics::MassMuon;
-                                 const float exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
-                                 return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
+                                 exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
                                } break;
                                case 2: {
                                  constexpr float massSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
-                                 const float exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
-                                 return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
+                                 exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
                                } break;
                                case 3: {
                                  constexpr float massSquared = o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged;
-                                 const float exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
-                                 return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
+                                 exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
                                } break;
                                case 4: {
                                  constexpr float massSquared = o2::constants::physics::MassProton * o2::constants::physics::MassProton;
-                                 const float exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
-                                 return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
+                                 exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
                                } break;
                                case 5: {
                                  constexpr float massSquared = o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron;
-                                 const float exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
-                                 return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
+                                 exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
                                } break;
                                case 6: {
                                  constexpr float massSquared = o2::constants::physics::MassTriton * o2::constants::physics::MassTriton;
-                                 const float exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
-                                 return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
+                                 exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
                                } break;
                                case 7: {
                                  constexpr float massSquared = o2::constants::physics::MassHelium3 * o2::constants::physics::MassHelium3;
-                                 const float exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
-                                 return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
+                                 exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
                                } break;
                                case 8: {
                                  constexpr float massSquared = o2::constants::physics::MassAlpha * o2::constants::physics::MassAlpha;
-                                 const float exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
-                                 return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
+                                 exptime = o2::framework::pid::tof::MassToExpTime(length, tofExpMom, massSquared);
                                }
                                default:
                                  return 0.f;
                                  break;
                              }
+                             return o2::framework::pid::tof::TrackTimeToTOFSignal(tracktime, exptime);
                            });
 
 namespace v001
