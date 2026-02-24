@@ -155,9 +155,9 @@ void ITOFLayer::createLayer(TGeoVolume* motherVolume)
     case kBarrelSegmented: {
       // First we create the volume for the whole layer, which will be used as mother volume for the segments
       const double avgRadius = 0.5 * (mInnerRadius + mOuterRadius);
-      const double staveSizeX = mStaves.second;              // cm
-      const double staveSizeY = mOuterRadius - mInnerRadius; // cm
-      const double staveSizeZ = mZLength;                    // cm
+      const double staveSizeX = mStaves.second;                                                                                                              // cm
+      const double staveSizeY = mOuterRadius - mInnerRadius;                                                                                                 // cm
+      const double staveSizeZ = mZLength;                                                                                                                    // cm
       const double deltaForTilt = std::sin(TMath::DegToRad() * mTiltAngle) * staveSizeX * 0.5 + std::cos(TMath::DegToRad() * mTiltAngle) * staveSizeY * 0.5; // we increase the size of the layer to account for the tilt of the staves
       TGeoTube* layer = new TGeoTube(mInnerRadius - deltaForTilt, mOuterRadius + deltaForTilt, mZLength / 2);
       TGeoVolume* layerVol = new TGeoVolume(mLayerName.c_str(), layer, medAir);
