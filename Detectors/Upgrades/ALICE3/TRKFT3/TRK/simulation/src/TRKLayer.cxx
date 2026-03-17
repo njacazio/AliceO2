@@ -91,7 +91,8 @@ void TRKCylindricalLayer::createLayer(TGeoVolume* motherVolume)
 TRKSegmentedLayer::TRKSegmentedLayer(int layerNumber, std::string layerName, float rInn, float tiltAngle, int numberOfStaves, int numberOfModules, float thickOrX2X0, MatBudgetParamMode mode)
   : TRKCylindricalLayer(layerNumber, layerName, rInn, numberOfModules * sModuleLength, thickOrX2X0, mode), mTiltAngle(tiltAngle), mNumberOfStaves(numberOfStaves), mNumberOfModules(numberOfModules)
 {
-  assert(numberOfStaves % 2 == 0 && "Error: numberOfStaves must be even!");
+  LOG(info) << "Creating segmented layer: id: " << mLayerNumber << " rInner: " << mInnerRadius << " rOuter: " << mOuterRadius << " zLength: " << mLength
+         << " x2X0: " << mX2X0 << " number of modules: " << mNumberOfModules;
 }
 
 TGeoVolume* TRKSegmentedLayer::createSensor()

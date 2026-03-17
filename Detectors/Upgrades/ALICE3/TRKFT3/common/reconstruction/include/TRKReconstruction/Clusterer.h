@@ -176,6 +176,9 @@ class Clusterer
   static o2::math_utils::Point3D<float> getClusterLocalCoordinates(const ClusterType& cluster, const uint8_t* patt,
                                                                    float yPlaneMLOT = 0.f) noexcept;
 
+  static o2::math_utils::Point3D<float> getClusterLocalCoordinates(const Cluster& cluster, const uint8_t* patt,
+                                                                    float yPlaneMLOT = 0.f) noexcept;
+
  protected:
   int mNHugeClus = 0;
   std::unique_ptr<ClustererThread> mThread;
