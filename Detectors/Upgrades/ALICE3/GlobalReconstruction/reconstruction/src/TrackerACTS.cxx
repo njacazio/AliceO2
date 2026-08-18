@@ -389,26 +389,26 @@ void TrackerACTS<nLayers>::clustersToTracks()
 
   double totalTime = 0.;
   LOG(info) << "==== TRK ACTS Tracking ====";
-  LOG(info) << "Processing " << mTimeFrame->getNrof() << " ROFs with B = " << mBz << " T";
+  // LOG(info) << "Processing " << mTimeFrame->getNrof() << " ROFs with B = " << mBz << " T";
 
   // Process each ROF
-  for (int iROF = 0; iROF < mTimeFrame->getNrof(); ++iROF) {
-    LOG(info) << "Processing ROF " << iROF;
-    // Build space points
-    mCurState = SpacePointBuilding;
-    totalTime += evaluateTask([this, iROF]() { buildSpacePoints(iROF); },
-                              StateNames[mCurState]);
+  // for (int iROF = 0; iROF < mTimeFrame->getNrof(); ++iROF) {
+  //   LOG(info) << "Processing ROF " << iROF;
+  //   // Build space points
+  //   mCurState = SpacePointBuilding;
+  //   totalTime += evaluateTask([this, iROF]() { buildSpacePoints(iROF); },
+  //                             StateNames[mCurState]);
 
-    // Run seeding
-    mCurState = Seeding;
-    totalTime += evaluateTask([this]() { createSeeds(); },
-                              StateNames[mCurState]);
+  //   // Run seeding
+  //   mCurState = Seeding;
+  //   totalTime += evaluateTask([this]() { createSeeds(); },
+  //                             StateNames[mCurState]);
 
-    // Find tracks
-    mCurState = TrackFinding;
-    totalTime += evaluateTask([this]() { findTracks(); },
-                              StateNames[mCurState]);
-  }
+  //   // Find tracks
+  //   mCurState = TrackFinding;
+  //   totalTime += evaluateTask([this]() { findTracks(); },
+  //                             StateNames[mCurState]);
+  // }
 
   // MC labeling
   if (mTimeFrame->hasMCinformation()) {
