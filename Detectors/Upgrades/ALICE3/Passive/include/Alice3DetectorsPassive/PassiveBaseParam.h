@@ -40,8 +40,8 @@ enum MagnetAbsorberLayout : int {
 struct Alice3PassiveBaseParam : public o2::conf::ConfigurableParamHelper<Alice3PassiveBaseParam> {
   // Geometry Builder parameters
 
-  MagnetType mMagType = MagnetType::AluminiumStabilizer;                                // Magnet type: as in MagnetType enum
-  MagnetAbsorberLayout mMagLayout = o2::passive::MagnetAbsorberLayout::SteppedAbsorber; // Magnet and absorber layout: as in MagnetAbsorberLayout enum
+  MagnetType mMagType = MagnetType::AluminiumStabilizer;                                   // Magnet type: as in MagnetType enum
+  MagnetAbsorberLayout mMagAbsLayout = o2::passive::MagnetAbsorberLayout::SteppedAbsorber; // Magnet and absorber layout: as in MagnetAbsorberLayout enum
 
   O2ParamDef(Alice3PassiveBaseParam, "Alice3PassiveBase");
 };

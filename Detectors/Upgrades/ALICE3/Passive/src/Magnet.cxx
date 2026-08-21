@@ -119,7 +119,7 @@ void Alice3Magnet::ConstructGeometry()
   // Passive Base configuration parameters
   auto& passiveBaseParam = Alice3PassiveBaseParam::Instance();
 
-  switch (passiveBaseParam.mMagLayout) {
+  switch (passiveBaseParam.mMagAbsLayout) {
     case o2::passive::MagnetAbsorberLayout::StandardRadius:
       // Defined in the header file
       break;
@@ -136,7 +136,7 @@ void Alice3Magnet::ConstructGeometry()
       mZLength = 800.f;              // cm
       break;
     default:
-      LOG(fatal) << "Unknown detector layout " << passiveBaseParam.mMagLayout;
+      LOG(fatal) << "Unknown detector layout " << passiveBaseParam.mMagAbsLayout;
       break;
   }
 

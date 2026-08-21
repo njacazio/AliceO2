@@ -132,7 +132,7 @@ void Alice3Absorber::ConstructGeometry()
 
   auto& passiveBaseParam = Alice3PassiveBaseParam::Instance();
   TGeoPcon* absorings = nullptr;
-  switch (passiveBaseParam.mMagLayout) {
+  switch (passiveBaseParam.mMagAbsLayout) {
     case o2::passive::MagnetAbsorberLayout::StandardRadius:
       absorings = new TGeoPcon(0., 360., 18);
       absorings->DefineSection(0, 500, 236, 274);
@@ -187,7 +187,7 @@ void Alice3Absorber::ConstructGeometry()
       absorings->DefineSection(5, 500, 245, 290);
       break;
     default:
-      LOG(fatal) << "Unknown detector layout " << passiveBaseParam.mMagLayout;
+      LOG(fatal) << "Unknown detector layout " << passiveBaseParam.mMagAbsLayout;
       break;
   }
 
