@@ -176,7 +176,7 @@ class Clusterer
   static o2::math_utils::Point3D<float> getClusterLocalCoordinates(const ClusterType& cluster, const uint8_t* patt,
                                                                    float yPlaneMLOT = 0.f) noexcept;
 
-  static o2::math_utils::Point3D<float> getClusterLocalCoordinates(const Cluster& cluster, const uint8_t* patt,
+  static o2::math_utils::Point3D<float> getClusterLocalCoordinates(const Clusterer& cluster, const uint8_t* patt,
                                                                     float yPlaneMLOT = 0.f) noexcept;
 
  protected:
